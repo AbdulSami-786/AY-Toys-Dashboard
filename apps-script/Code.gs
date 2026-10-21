@@ -132,13 +132,20 @@ function refreshStatus() {
   toast_('Status updated.');
 }
 
+// Runs fn. The script lock only keeps two writes apart when it is free: if another run holds it, this one goes on
+// anyway after a few seconds, so setup and the menu never stop with "Lock timeout".
 function withLock_(fn) {
   var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  var got = false;
+  try {
+    got = lock.tryLock(5000);
+  } catch (e) {
+    got = false;
+  }
   try {
     return fn();
   } finally {
-    lock.releaseLock();
+    if (got) lock.releaseLock();
   }
 }
 
@@ -354,8 +361,11 @@ function doPost(e) {
   var lock = LockService.getScriptLock();
   var locked = false;
   try {
-    lock.waitLock(30000);
-    locked = true;
+    try {
+      locked = lock.tryLock(10000); // best effort, see withLock_
+    } catch (err) {
+      locked = false;
+    }
     var req = JSON.parse(e.postData.contents);
     var out;
     switch (req.action) {
