@@ -4,7 +4,6 @@ import { useStore, OUTDATED_SCRIPT } from '../store/store';
 import { useNav } from '../store/nav';
 import { Modal, useDialog } from '../components/ui';
 import { isShared, shareLink, newShareToken, newSharePassword, MIN_PASSWORD } from '../lib/share';
-import { KEY_MESSAGE } from '../store/sheets';
 import { copyText } from '../lib/clipboard';
 
 // WhatsApp wants an international number without "+" — local Pakistani numbers (03xx…) get 92 in front
@@ -156,17 +155,6 @@ export function ShareLedgerModal({ which, partyId, onClose }) {
         <div className="mt">
           <button className="btn sm primary" onClick={() => (onClose(), nav.open('sync', { tab: 'guide' }))}>
             Show the new code
-          </button>
-        </div>
-      </div>
-    );
-  else if (check === 'locked')
-    blocker = (
-      <div className="note warn">
-        {KEY_MESSAGE}
-        <div className="mt">
-          <button className="btn sm primary" onClick={() => (onClose(), nav.open('sync'))}>
-            Open Google Sheets Sync
           </button>
         </div>
       </div>

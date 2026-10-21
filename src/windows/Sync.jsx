@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Cloud, CloudOff, Copy, RefreshCw, Upload, CheckCircle2, AlertCircle, ExternalLink, KeyRound } from 'lucide-react';
+import { Cloud, CloudOff, Copy, RefreshCw, Upload, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { useStore, OUTDATED_SCRIPT } from '../store/store';
 import { useDialog, Tabs } from '../components/ui';
-import { sheets, KEY_MESSAGE, SCRIPT_VERSION } from '../store/sheets';
+import { sheets, SCRIPT_VERSION } from '../store/sheets';
 import { SHEET, SHEET_READY } from '../config';
 import CODE from '../../apps-script/Code.gs?raw';
 import { copyText } from '../lib/clipboard';
@@ -25,8 +25,7 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
     setBusy(true);
     try {
       const r = await sheets.secure(SHEET);
-      if (r.state === 'locked') setTest({ ok: false, msg: KEY_MESSAGE });
-      else if (r.state === 'legacy') setTest({ ok: false, msg: OUTDATED_SCRIPT });
+      if (r.state === 'legacy') setTest({ ok: false, msg: OUTDATED_SCRIPT });
       else setTest({ ok: true, msg: `Connected to spreadsheet "${r.sheet}"` });
       secureSheet(SHEET).catch(() => {});
     } catch (e) {
@@ -90,16 +89,11 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
                   </td>
                 </tr>
                 <tr>
-                  <td>Protection (owner key)</td>
+                  <td>Apps Script code</td>
                   <td>
-                    {keyState.state === 'ok' && (
-                      <span className="badge ok">
-                        <KeyRound size={11} /> Protected
-                      </span>
-                    )}
+                    {keyState.state === 'ok' && <span className="badge ok">Up to date</span>}
                     {keyState.state === 'checking' && <span className="muted small">Checking…</span>}
-                    {keyState.state === 'legacy' && <span className="badge warn">Apps Script code out of date</span>}
-                    {keyState.state === 'locked' && <span className="badge err">Locked with a different key</span>}
+                    {keyState.state === 'legacy' && <span className="badge warn">Out of date</span>}
                     {keyState.state === 'error' && <span className="badge err">Can't reach the sheet</span>}
                   </td>
                 </tr>
@@ -162,7 +156,6 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
                 </button>
               </div>
             )}
-            {keyState.state === 'locked' && <div className="note warn mt">{KEY_MESSAGE}</div>}
             {keyState.state === 'legacy' && <div className="note warn mt">{OUTDATED_SCRIPT}</div>}
             {keyState.state === 'ok' && keyState.version > 0 && keyState.version < SCRIPT_VERSION && (
               <div className="note warn mt">
@@ -216,8 +209,7 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
                 In the spreadsheet: <b>Extensions › Apps Script</b>. Delete the sample code, paste the code below and click <b>Save</b>.
               </li>
               <li>
-                In the toolbar choose the function <b>setup</b> and click <b>Run</b> → allow permissions. It creates every tab, locks the sheet to the
-                owner key and adds a <b>Start Here</b> tab. (After reloading the sheet, the <b>AY Toys</b> menu has the same command.)
+                In the toolbar choose the function <b>setup</b> and click <b>Run</b> → allow permissions. It creates every tab and adds a <b>Start Here</b> tab. (After reloading the sheet, the <b>AY Toys</b> menu has the same command.)
               </li>
               <li>
                 Click <b>Deploy › New deployment</b> → type <b>Web app</b> → Execute as <b>Me</b> → Who has access <b>Anyone</b> → Deploy.
@@ -226,8 +218,7 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
                 Copy the <b>Web app URL</b> (ends with <code>/exec</code>) and paste it into <code>src/config.js</code> as <code>SHEET_URL</code>.
               </li>
               <li>
-                Rebuild and redeploy the app (<code>npm run build</code>). Every computer that opens it is connected. The owner key at the top of
-                the code must be the same as <code>OWNER_KEY</code> in <code>src/config.js</code> (run <code>npm run sheet-code</code> for a copy with the key filled in; the copy below leaves it empty, so the app locks the sheet to its own key the first time it connects).
+                Rebuild and redeploy the app (<code>npm run build</code>). Every computer that opens it is connected.
               </li>
             </ol>
             <div className="flex mb">

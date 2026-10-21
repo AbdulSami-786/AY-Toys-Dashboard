@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { buildLedger } from '../lib/ledger';
 import { uid } from '../lib/format';
 import { emptyData, newCompany, sampleData, defaultAccounts } from './defaults';
-import { sheets, TABLES, KEY_MESSAGE } from './sheets';
+import { sheets, TABLES } from './sheets';
 import { SHEET, SHEET_READY } from '../config';
 import { mergeCompanies, newer } from './companies';
 import { isShared, sharePayload, shareIndex } from '../lib/share';
@@ -18,7 +18,7 @@ const REPORT_DELAY = 20000; // ms without changes before the sheet's Reports tab
 const PULL_EVERY = 5 * 60000; // download other computers' changes this often (while the app is on screen)
 const RETRY_EVERY = 60000; // after a failed or missing download
 export const OFFLINE_MESSAGE = 'No internet — everything is saved on this computer and uploads by itself when the connection is back.';
-// fetch failed / no answer (not: the sheet answered with an error, or the owner key is wrong)
+// fetch failed / no answer (not: the sheet answered with an error)
 const isNetworkError = (e) => !!e && !e.server && e.code !== 'key';
 export const OUTDATED_SCRIPT =
   'Your Google Apps Script code is out of date. Copy the new code from Company › Google Sheets Sync › Setup Guide, paste it over the old code, Save, run setup once, then Deploy › Manage deployments › Edit › Version: New version › Deploy.';
@@ -545,7 +545,6 @@ export function StoreProvider({ children }) {
     setCompaniesSync({ status: 'loading', message: '' });
     try {
       const sec = await sheets.secure(SHEET);
-      if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
       if (sec.state === 'legacy') throw new Error(OUTDATED_SCRIPT);
       await runCompanyDeletes();
       const gone = new Set(LS.get('ay.companyDeletes', []).map((x) => x.id));
@@ -572,7 +571,7 @@ export function StoreProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Protect the Apps Script with the owner key (created on first connect) — see sheets.secure
+  // Check the Apps Script answers and is current — see sheets.secure
   const secureSheet = useCallback(async (url) => {
     if (!url) {
       setKeyState({ state: 'nourl', url: '' });
@@ -581,7 +580,7 @@ export function StoreProvider({ children }) {
     setKeyState((k) => ({ ...k, state: k.url === url && k.state === 'ok' ? 'ok' : 'checking', url }));
     try {
       const r = await sheets.secure(url);
-      setKeyState({ state: r.state, url, claimed: !!r.claimed, version: r.version || 0 });
+      setKeyState({ state: r.state, url, version: r.version || 0 });
       return r;
     } catch (e) {
       setKeyState({ state: 'error', url, message: e.message });
@@ -603,7 +602,6 @@ export function StoreProvider({ children }) {
     try {
       setSync((s) => ({ ...s, status: 'syncing', message: '' }));
       const sec = await secureSheet(url);
-      if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
       // company settings (theme, templates, shortcuts…): keep the most recent copy
       const gone = new Set(LS.get('ay.companyDeletes', []).map((x) => x.id));
       const remoteCos = (await sheets.listCompanies(url)).filter((r) => !gone.has(String(r.id)));
@@ -756,7 +754,6 @@ export function StoreProvider({ children }) {
       if (securedUrlRef.current !== url) {
         const sec = await sheets.secure(url);
         if (sec.state === 'legacy') throw new Error(OUTDATED_SCRIPT);
-        if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
         securedUrlRef.current = url;
       }
       // a few ledgers per request keeps each upload small
@@ -867,7 +864,6 @@ export function StoreProvider({ children }) {
       if (securedUrlRef.current !== url) {
         const sec = await sheets.secure(url);
         if (sec.state === 'legacy') throw new Error(OUTDATED_SCRIPT);
-        if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
         securedUrlRef.current = url;
       }
       await sheets.publishReports(url, { companyId: co.id, code: co.code, name, at: new Date().toISOString(), reports, summary });

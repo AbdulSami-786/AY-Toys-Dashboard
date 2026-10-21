@@ -7,7 +7,7 @@
  *  3. In the toolbar choose the function "setup" and click Run. Allow the permissions it asks for.
  *     ("setup" is already selected because it is the first function.) If Google says the app is not
  *     verified: Advanced › Go to … (unsafe) — it is your own script.
- *     setup creates every tab, locks the sheet to the owner key below and writes a "Start Here" tab.
+ *     setup creates every tab and writes a "Start Here" tab.
  *     (After reloading the sheet there is also an "AY Toys" menu with the same command.)
  *  4. Deploy › New deployment › gear icon › Web app.
  *       Execute as: Me
@@ -36,23 +36,16 @@
  *  One row per record; nested data (invoice lines etc.) is stored as JSON text. Make changes in the app,
  *  not in these tabs: the app overwrites them. Each tab shows a warning before anyone edits it by hand.
  *
- * OWNER KEY
- *  Every request must carry the owner key. Without it nobody can read or change your books through the
- *  Web app URL — this matters because shared party-ledger links use the same URL.
- *  APP_OWNER_KEY below must be the same as OWNER_KEY in the app's src/config.js.
- *  Changing the key: change it in both places, then in the sheet use AY Toys › Lock to the owner key in this code.
+ * WHO CAN USE IT
+ *  The Web app URL is the only address of your books: keep it private (it is in src/config.js, which is not in git).
+ *  Shared party-ledger links use the same URL, so only send a link to people you trust with it.
  *
  * SHARED PARTY LEDGERS
  *  <Web app URL>?l=<link id> shows that party's ledger after they type their password.
  *  That page can only read — it cannot change anything.
  */
 
-var VERSION = 7;
-
-// The same as OWNER_KEY in the app's src/config.js. setup locks the sheet to it.
-// Never commit the real key: leave this empty here and paste apps-script/Code.deploy.gs (made by `npm run sheet-code`,
-// it has the key filled in and is not kept in git) into the Apps Script editor.
-var APP_OWNER_KEY = '';
+var VERSION = 8;
 
 var TAB_NAMES = {
   accounts: 'Chart of Accounts',
@@ -70,8 +63,6 @@ var REPORT_DATA_TAB = 'Report Data';
 var SHARED_HEAD = ['id', 'companyId', 'partyId', 'kind', 'name', 'company', 'color', 'salt', 'hash', 'updatedAt', 'parts'];
 var SHARE_CHUNK = 40000; // a cell holds at most 50,000 characters
 var MAX_TRIES = 8; // wrong passwords allowed per link every 15 minutes
-var PUBLIC_ACTIONS = { ping: true, claimKey: true };
-
 // Column order of a new tab. Any other field the app sends gets its own column at the end automatically.
 var COLUMNS = {
   companies: ['id', 'code', 'name', 'legalName', 'address', 'city', 'phone', 'email', 'ntn', 'website', 'currency', 'dateStyle', 'fyMonth', 'taxName', 'taxRate', 'accountNumbers', 'theme', 'lists', 'createdAt', 'updatedAt'],
@@ -103,22 +94,13 @@ var SPARE_COLS = 5;
 /**
  * Run once after pasting this code, and again after updating it. Safe to repeat: it never deletes data.
  * Creates every tab (Start Here, Companies, the six tabs of each company, the hidden Shared Ledgers),
- * locks the sheet to APP_OWNER_KEY when no key is set yet, and rebuilds Start Here.
+ * removes the old owner key of earlier versions, and rebuilds Start Here.
  */
 function setup() {
   var notes = withLock_(function () {
     var out = [];
-    var key = ownerKey_();
-    if (!key && validKey_(APP_OWNER_KEY)) {
-      setOwnerKey_(APP_OWNER_KEY);
-      out.push('Locked the sheet to the owner key in this code.');
-    } else if (!key) {
-      out.push('APP_OWNER_KEY at the top of the code is empty, so the app locks the sheet the first time it connects.');
-    } else if (APP_OWNER_KEY && key !== APP_OWNER_KEY) {
-      out.push('Warning: the sheet is locked to a different owner key than the one in this code. If the app cannot connect, use AY Toys › Lock to the owner key in this code.');
-    } else {
-      out.push('Owner key: OK.');
-    }
+    // earlier versions locked the sheet with an owner key; it is not used any more
+    PropertiesService.getScriptProperties().deleteProperty('OWNER_KEY');
     var n = buildTabs_();
     renderReports_();
     writeStart_();
@@ -142,41 +124,12 @@ function onOpen() {
     .addItem('Rebuild the Reports tab', 'refreshReports')
     .addItem('Delete tabs of deleted shops…', 'deleteOrphanTabs')
     .addItem('Reset a user\'s password…', 'resetUserPassword')
-    .addSeparator()
-    .addItem('Lock to the owner key in this code', 'useOwnerKeyFromCode')
     .addToUi();
 }
 
 function refreshStatus() {
   withLock_(writeStart_);
   toast_('Status updated.');
-}
-
-// Points the sheet at APP_OWNER_KEY. Replacing a different key needs a click on Yes in the sheet.
-function useOwnerKeyFromCode() {
-  if (!validKey_(APP_OWNER_KEY)) {
-    tell_('No owner key in the code', 'Set APP_OWNER_KEY at the top of the code (the same as OWNER_KEY in src/config.js, 24–64 letters and digits), Save, and try again.');
-    return;
-  }
-  var cur = ownerKey_();
-  if (cur === APP_OWNER_KEY) {
-    tell_('Owner key', 'The sheet already uses the owner key in this code.');
-    return;
-  }
-  if (cur) {
-    var ui = ui_();
-    if (!ui) {
-      tell_('Owner key not changed', 'The sheet uses a different key. Run this from the sheet (AY Toys › Lock to the owner key in this code) to confirm, or delete OWNER_KEY in Project Settings › Script properties and run setup.');
-      return;
-    }
-    var answer = ui.alert('Replace the owner key?', 'Computers whose app still has the old key stop syncing until their src/config.js has the key in this code. Continue?', ui.ButtonSet.YES_NO);
-    if (answer !== ui.Button.YES) return;
-  }
-  withLock_(function () {
-    setOwnerKey_(APP_OWNER_KEY);
-    writeStart_();
-  });
-  tell_('Owner key', 'The sheet is now locked to the owner key in this code.');
 }
 
 function withLock_(fn) {
@@ -254,7 +207,6 @@ function when_(d) {
 
 function status_() {
   var ss = SpreadsheetApp.getActive();
-  var key = ownerKey_();
   var co = ss.getSheetByName(COMPANIES_TAB);
   var codes = {};
   var companies = (co ? readTable_(co) : [])
@@ -291,20 +243,7 @@ function status_() {
       return [str_(u.name), str_(u.username), u.role === 'admin' ? 'Super Admin' : 'Staff', str_(u.phone), u.active === false ? 'Switched off' : 'Active', u.lastLogin ? when_(u.lastLogin) : ''];
     });
   var shared = ss.getSheetByName(SHARED_TAB);
-  var keyText, keyOk;
-  if (!key) {
-    keyOk = false;
-    keyText = 'Not locked yet. Run setup, or the app locks it the first time it connects.';
-  } else if (!APP_OWNER_KEY || key === APP_OWNER_KEY) {
-    keyOk = true;
-    keyText = APP_OWNER_KEY ? 'Locked to the owner key in this code (the same as src/config.js).' : 'Locked by the app.';
-  } else {
-    keyOk = false;
-    keyText = 'Locked to a different key than the one in this code. If the app cannot connect, use AY Toys › Lock to the owner key in this code.';
-  }
   return {
-    key: keyText,
-    keyOk: keyOk,
     companies: companies,
     orphans: Object.keys(orphans),
     users: users,
@@ -335,7 +274,6 @@ function writeStart_() {
   add(['This Google Sheet stores the books of the AY Toys app. Work in the app — it reads and writes these tabs by itself.']);
   section('STATUS');
   var firstStatus = add(['Script version', VERSION]);
-  var keyRow = add(['Owner key', info.key]);
   add(['Companies', info.companies.length]);
   add(['Users', info.users.length]);
   add(['Shared party ledgers', info.shared]);
@@ -386,14 +324,13 @@ function writeStart_() {
   sections.forEach(function (r) {
     sh.getRange(r, 1, 1, W).setFontWeight('bold').setFontColor(BRAND).setBackground('#e6f4ea');
   });
-  sh.getRange(firstStatus, 1, 6, 1).setFontWeight('bold');
+  sh.getRange(firstStatus, 1, 5, 1).setFontWeight('bold');
   if (usersHead) sh.getRange(usersHead, 1, 1, W).setFontWeight('bold').setBackground('#f1f3f4');
-  if (!info.keyOk) sh.getRange(keyRow, 2).setFontColor('#c5221f').setFontWeight('bold');
   if (tableHead) {
     sh.getRange(tableHead, 1, 1, W).setFontWeight('bold').setBackground('#f1f3f4');
     sh.getRange(tableHead, 3, info.companies.length + 1, 4).setHorizontalAlignment('right');
   }
-  sh.getRange(firstStatus, 2, 6, 1).setHorizontalAlignment('left');
+  sh.getRange(firstStatus, 2, 5, 1).setHorizontalAlignment('left');
   sh.setTabColor('#202124');
   if (sh.getIndex() !== 1) {
     ss.setActiveSheet(sh);
@@ -420,20 +357,10 @@ function doPost(e) {
     lock.waitLock(30000);
     locked = true;
     var req = JSON.parse(e.postData.contents);
-    if (!PUBLIC_ACTIONS[req.action]) checkKey_(req.key);
     var out;
     switch (req.action) {
       case 'ping':
-        var key = ownerKey_();
-        var keyOk = !!key && req.key === key;
-        out = { ok: true, version: VERSION, secured: !!key, keyOk: keyOk, sheet: keyOk ? SpreadsheetApp.getActive().getName() : '' };
-        break;
-      case 'claimKey':
-        out = claimKey_(req.newKey);
-        break;
-      case 'rotateKey':
-        // only reachable with the current key (checked above)
-        out = rotateKey_(req.newKey);
+        out = { ok: true, version: VERSION, sheet: SpreadsheetApp.getActive().getName() };
         break;
       case 'listCompanies':
         out = { ok: true, companies: readTable_(companiesSheet_()) };
@@ -782,28 +709,6 @@ function writeTable_(sh, records, columns) {
   styleHead_(sh);
 }
 
-/* ---------------- owner key ---------------- */
-
-function ownerKey_() {
-  return PropertiesService.getScriptProperties().getProperty('OWNER_KEY') || '';
-}
-
-function setOwnerKey_(k) {
-  PropertiesService.getScriptProperties().setProperty('OWNER_KEY', k);
-}
-
-function validKey_(k) {
-  return /^[A-Za-z0-9]{24,64}$/.test(String(k || ''));
-}
-
-// No request may touch the books until the sheet is locked to a key (an unlocked sheet would let anyone with the
-// Web app URL read and change everything). The app locks it on its first connect (claimKey).
-function checkKey_(k) {
-  var key = ownerKey_();
-  if (!key) throw new Error('SHEET_NOT_LOCKED');
-  if (String(k || '') !== key) throw new Error('OWNER_KEY_REQUIRED');
-}
-
 // Tab names are built from the company code and table name the app sends: accept only the shapes the app makes
 function checkCode_(code) {
   if (!/^[A-Za-z0-9_]{1,40}$/.test(String(code || ''))) throw new Error('Invalid company code');
@@ -812,24 +717,6 @@ function checkCode_(code) {
 function checkTable_(t) {
   if (!Object.prototype.hasOwnProperty.call(COLUMNS, t)) throw new Error('Invalid table ' + t);
   return t;
-}
-
-// The first computer to connect protects the sheet with its key; later calls must send the same key.
-function claimKey_(newKey) {
-  var k = String(newKey || '');
-  if (!validKey_(k)) throw new Error('Invalid owner key');
-  var cur = ownerKey_();
-  if (cur && cur !== k) throw new Error('OWNER_KEY_REQUIRED');
-  if (!cur) setOwnerKey_(k);
-  return { ok: true, secured: true };
-}
-
-// Replace the owner key (the caller already proved it holds the current one)
-function rotateKey_(newKey) {
-  var k = String(newKey || '');
-  if (!validKey_(k)) throw new Error('Invalid owner key');
-  setOwnerKey_(k);
-  return { ok: true, secured: true };
 }
 
 function hash_(salt, pass) {
@@ -1199,7 +1086,6 @@ function sharedSheet_() {
 }
 
 function publishLedgers_(req) {
-  if (!ownerKey_()) throw new Error('Protect this Google Sheet with an owner key before sharing ledgers (open Google Sheets Sync in AY Toys).');
   var sh = sharedSheet_();
   var removes = (req.removes || []).filter(validToken_);
   if (removes.length)
@@ -1292,7 +1178,7 @@ function openLedger(token, pass) {
   try {
     token = String(token || '');
     pass = String(pass || '').trim();
-    if (!validToken_(token) || !ownerKey_()) return { ok: false, error: 'This ledger link is not active.' };
+    if (!validToken_(token)) return { ok: false, error: 'This ledger link is not active.' };
     var cache = CacheService.getScriptCache();
     var failKey = 'pw_' + token;
     var fails = Number(cache.get(failKey) || 0);
@@ -1314,7 +1200,7 @@ function openLedger(token, pass) {
 function ledgerPage_(token) {
   var head = null;
   try {
-    head = validToken_(token) && ownerKey_() ? readShared_(token, true) : null;
+    head = validToken_(token) ? readShared_(token, true) : null;
   } catch (err) {
     head = null;
   }

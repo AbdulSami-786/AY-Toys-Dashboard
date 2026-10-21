@@ -148,14 +148,12 @@ connects to it by itself — nothing to paste, no keys to copy between computers
 **One-time setup (about 5 minutes):**
 
 1. Create a Google Sheet, e.g. **AY Toys Database**.
-2. Copy `src/config.example.js` to `src/config.js`, put a new key in `OWNER_KEY` (`node scripts/new-owner-key.mjs` makes one) and run
-   `npm run sheet-code`. **Extensions › Apps Script**: delete the sample code, paste the generated `apps-script/Code.deploy.gs`
-   (it is `Code.gs` with your key filled in; it is not kept in git) and click **Save**.
-3. In the toolbar choose the function **`setup`** and click **Run**, then allow the permissions. It creates every tab,
-   locks the sheet to the owner key and adds a **Start Here** tab (status, companies, help). After reloading the sheet
-   there is also an **AY Toys** menu: *Set up / repair this sheet*, *Refresh status*, *Lock to the owner key in this code*.
+2. **Extensions › Apps Script**: delete the sample code, paste all of [`apps-script/Code.gs`](apps-script/Code.gs) and click **Save**.
+3. In the toolbar choose the function **`setup`** and click **Run**, then allow the permissions. It creates every tab
+   and adds a **Start Here** tab (status, companies, help). After reloading the sheet there is also an **AY Toys** menu:
+   *Set up / repair this sheet*, *Refresh status*.
 4. **Deploy › New deployment** → type **Web app** → *Execute as*: **Me** → *Who has access*: **Anyone** → Deploy.
-5. Copy the Web app URL (it ends with `/exec`) and paste it into [`src/config.js`](src/config.js):
+5. Copy `src/config.example.js` to `src/config.js`. Copy the Web app URL (it ends with `/exec`) and paste it into it:
    ```js
    export const SHEET_URL = 'https://script.google.com/macros/s/AKfy…/exec';
    ```
@@ -163,9 +161,6 @@ connects to it by itself — nothing to paste, no keys to copy between computers
 
 What happens then:
 
-- The sheet is **locked to the owner key** (`APP_OWNER_KEY` at the top of `Code.gs`, which must be the same as
-  `OWNER_KEY` in `src/config.js`; if `setup` was skipped, the first computer that connects locks it). After that the
-  script refuses every read or write without that key — important because shared ledger links show the Web App URL.
 - The **Reports** tab (second tab) shows Profit & Loss, Balance Sheet, aging, sales, purchases and stock reports of
   every shop, with a clickable contents list. The app builds them with its own report engine and sends them about
   20 seconds after you stop making changes (or *Company › Google Sheets Sync › Update now*).
@@ -187,22 +182,19 @@ What happens then:
   background and retry automatically. **Company › Google Sheets Sync** shows the status and has *Sync now* / *Upload all*.
 
 **Keep `src/config.js` private**: it is listed in `.gitignore` and must never be committed or published (the repository
-may be public — only `src/config.example.js` belongs in it). With the URL and the key, anyone could read or change the
-books and read the users' password hashes. Never commit the client's data files either (`old data/` is ignored).
-The key is inside every copy of the app, so give the program only to people who may open the books.
+may be public — only `src/config.example.js` belongs in it). The Web app URL is the only address of the books: anyone who has
+it can read or change them and read the users' password hashes, and a shared ledger link shows that URL. Never commit the
+client's data files either (`old data/` is ignored). The URL is inside every copy of the app, so give the program only to people
+who may open the books. If the URL ever leaks, make a **new deployment** (new URL) and put it in `src/config.js`.
 
 **Changing things later**
 
 - Edited `Code.gs`? Paste it, **Save**, run **`setup`** once (it never deletes data), then use **Deploy › Manage
   deployments › Edit › Version: New version** so the URL stays the same. (A *new deployment* gets a new URL, which then
   has to go into `src/config.js` again.)
-- New owner key: change `OWNER_KEY` in `src/config.js`, run `npm run sheet-code`, paste the new `Code.deploy.gs`, then in the sheet use
-  **AY Toys › Lock to the owner key in this code** (or delete `OWNER_KEY` in Apps Script **Project Settings › Script
-  properties** and run `setup`).
 - Made a mistake in the sheet? **File › Version history** brings back an earlier copy.
-- Upgrading from the older version (URL pasted per computer): computers that still have their old key move the sheet to
-  the key in `src/config.js` automatically. If a computer says the sheet is *locked with a different owner key*, delete
-  `OWNER_KEY` in Script properties as above and click **Reload**.
+- Upgrading from the version with an owner key: paste the new `Code.gs`, Save, run `setup` (it removes the old key) and use
+  **Deploy › Manage deployments › Edit › Version: New version**. Until then the app says the Apps Script code is out of date.
 - No URL in `src/config.js` yet? The app runs on each computer only and says so on the company screen; everything
   uploads the first time it connects.
 - Testing against another sheet: `VITE_SHEET_URL=https://…/exec npm run dev` overrides the URL for that run only.
@@ -235,7 +227,7 @@ then **Deploy › Manage deployments › Edit › Version: New version › Deplo
 ## Project layout
 
 ```
-src/config.js              the one Google Sheet (Web App URL) + owner key (private, not in git; see config.example.js)
+src/config.js              the one Google Sheet (Web App URL) (private, not in git; see config.example.js)
 apps-script/Code.gs        Google Apps Script backend (paste into your sheet)
 src/lib/ledger.js          double-entry posting engine (journal lines, avg-cost inventory, open balances)
 src/lib/reports.js         all report builders

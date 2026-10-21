@@ -5,9 +5,8 @@ release
 *.log
 recording/*.mp4
 recording/*.webm
-# private: the sheet address + owner key, the code made from it, and the client's QuickBooks backup
+# private: the sheet address and the client's QuickBooks backup
 src/config.js
-apps-script/Code.deploy.gs
 old data/
 .env
 .env.*
