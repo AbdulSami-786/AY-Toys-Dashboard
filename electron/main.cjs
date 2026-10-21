@@ -53,8 +53,8 @@ function serveFiles() {
     let rel = decodeURIComponent(url.pathname);
     if (rel === '/' || rel === '') rel = '/index.html';
     const file = path.normalize(path.join(DIST, rel));
-    // only files of the app itself
-    if (!file.startsWith(DIST)) return new Response('Forbidden', { status: 403 });
+    // only files of the app itself (the separator keeps a sibling folder such as "dist-old" out)
+    if (file !== DIST && !file.startsWith(DIST + path.sep)) return new Response('Forbidden', { status: 403 });
     if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) {
       if (rel.startsWith('/assets/')) return new Response('Not found', { status: 404 });
       return net.fetch(pathToFileURL(path.join(DIST, 'index.html')).toString()); // the app has a single page
@@ -95,6 +95,8 @@ function createWindow() {
       if (/^(https?|mailto|tel|whatsapp):/i.test(url)) shell.openExternal(url);
     }
   });
+  // the page can never attach a <webview>
+  win.webContents.on('will-attach-webview', (e) => e.preventDefault());
   // right-click: cut / copy / paste in text boxes
   win.webContents.on('context-menu', (_e, p) => {
     if (!p.isEditable && !p.selectionText) return;
@@ -136,6 +138,10 @@ app.on('second-instance', () => {
 app.whenReady().then(() => {
   app.setAppUserModelId('com.aytoys.accounting');
   serveFiles();
+  // the page needs no camera, microphone, location…: only the clipboard (paste into lists) and full screen (F11)
+  const allowed = new Set(['clipboard-read', 'clipboard-sanitized-write', 'fullscreen']);
+  session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => callback(allowed.has(permission)));
+  session.defaultSession.setPermissionCheckHandler((_wc, permission) => allowed.has(permission));
   createWindow();
   // Chromium writes the small settings store (shop list, changes waiting to upload) to disk lazily; write it
   // often, so a crash or power cut cannot lose it (the books themselves are in the database and safe)

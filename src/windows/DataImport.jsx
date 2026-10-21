@@ -62,8 +62,7 @@ export default function DataImport({ onDone }) {
       { ok: 'Replace', danger: true },
     );
     if (!ok) return;
-    replaceData(json.data);
-    if (store.sheetUrl) await store.pushAll();
+    replaceData(json.data); // also queues the full upload to the sheet (it waits if there is no internet)
     dlg.toast('Backup loaded into ' + company.name);
     reset();
     onDone?.();

@@ -84,8 +84,10 @@ export function downloadFile(filename, content, mime = 'text/plain') {
 
 export function toCSV(rows) {
   const esc = (v) => {
-    const s = v === null || v === undefined ? '' : String(v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    let s = v === null || v === undefined ? '' : String(v);
+    // Excel and Sheets run text that starts with = + - @ as a formula: mark such text (but not plain numbers) as text
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s) && !/^[+-]?[\d,]*\.?\d+(e[+-]?\d+)?%?$/i.test(s)) s = "'" + s;
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   return '﻿' + rows.map((r) => r.map(esc).join(',')).join('\r\n');
 }

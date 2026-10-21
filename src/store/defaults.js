@@ -157,7 +157,7 @@ export function newCompany({ name, theme, currency = 'Rs', ...rest }) {
       .slice(0, 8) || 'CO';
   return {
     id: uid(),
-    code: code + '_' + Math.random().toString(36).slice(2, 5).toUpperCase(),
+    code: code + '_' + uid().slice(0, 6).toUpperCase(), // unique: the code names the company's tabs in the sheet
     name,
     legalName: name,
     address: '',

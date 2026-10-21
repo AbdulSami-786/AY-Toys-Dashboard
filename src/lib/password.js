@@ -4,7 +4,7 @@ const enc = new TextEncoder();
 const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 export const PBKDF2_ROUNDS = 120000;
-export const MIN_PASSWORD = 6;
+export const MIN_PASSWORD = 8;
 
 export function newSalt() {
   const a = new Uint8Array(16);

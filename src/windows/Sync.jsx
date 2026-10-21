@@ -227,7 +227,7 @@ export default function SyncWindow({ tab: t0 = 'status' }) {
               </li>
               <li>
                 Rebuild and redeploy the app (<code>npm run build</code>). Every computer that opens it is connected. The owner key at the top of
-                the code must be the same as <code>OWNER_KEY</code> in <code>src/config.js</code>.
+                the code must be the same as <code>OWNER_KEY</code> in <code>src/config.js</code> (run <code>npm run sheet-code</code> for a copy with the key filled in; the copy below leaves it empty, so the app locks the sheet to its own key the first time it connects).
               </li>
             </ol>
             <div className="flex mb">

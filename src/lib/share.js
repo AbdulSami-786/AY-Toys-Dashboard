@@ -13,7 +13,7 @@ import { TXN_TYPES } from '../store/defaults';
 export const newShareToken = () => randomString(24);
 // lowercase + digits without look-alikes (0/o, 1/l/i) so it is easy to type on a phone
 export const newSharePassword = () => randomString(8, 'abcdefghjkmnpqrstuvwxyz23456789');
-export const MIN_PASSWORD = 4;
+export const MIN_PASSWORD = 6;
 
 export const isShared = (p) => !!(p?.share?.on && p.share.token && p.share.pass);
 

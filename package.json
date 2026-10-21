@@ -11,8 +11,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "release": "vite build && electron-builder --win nsis portable && node electron/finish-release.cjs",
-    "app": "vite build && electron ."
+    "release": "vite build && electron-builder --win nsis portable --publish never && node electron/finish-release.cjs",
+    "app": "vite build && electron .",
+    "sheet-code": "node scripts/make-sheet-code.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.3.4",

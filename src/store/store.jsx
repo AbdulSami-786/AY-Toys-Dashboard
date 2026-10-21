@@ -362,6 +362,7 @@ export function StoreProvider({ children }) {
     };
     const back = () => {
       setOnline(true);
+      auto().runDeletes?.();
       if (auto().companiesError) auto().fetchCompanies?.().catch(() => {});
       if (pendingCount()) flush();
       pullNow();
@@ -374,6 +375,7 @@ export function StoreProvider({ children }) {
       if (!navigator.onLine) return;
       if (pendingCount()) flush();
       const a = auto();
+      a.runDeletes?.();
       if (a.companiesError) a.fetchCompanies?.().catch(() => {});
       if (document.hidden) return;
       const behind = a.syncStatus === 'error' || a.syncStatus === 'offline' || a.pulled !== a.companyId;
@@ -501,6 +503,17 @@ export function StoreProvider({ children }) {
     setDataState({ companyId: id, data: null }); // loaded from storage by the effect above
   }, []);
 
+  const runCompanyDeletes = useCallback(async () => {
+    for (const d of LS.get('ay.companyDeletes', [])) {
+      try {
+        await sheets.deleteCompany(SHEET, d.id, d.code);
+        LS.set('ay.companyDeletes', LS.get('ay.companyDeletes', []).filter((x) => x.id !== d.id));
+      } catch (e) {
+        if (!e.server) return; // offline: later
+      }
+    }
+  }, []);
+
   const deleteCompany = useCallback(
     (id) => {
       const co = companies.find((c) => c.id === id);
@@ -516,9 +529,14 @@ export function StoreProvider({ children }) {
         setActiveId(null);
         setDataState({ companyId: null, data: null });
       }
-      if (SHEET_READY && co) sheets.deleteCompany(SHEET, co.id, co.code).catch(() => {});
+      // removed from the sheet too — if that fails (offline), it is kept in a list and retried, so the shop
+      // does not come back when the shop list is downloaded again
+      if (SHEET_READY && co) {
+        LS.set('ay.companyDeletes', [...LS.get('ay.companyDeletes', []).filter((x) => x.id !== co.id), { id: co.id, code: co.code }]);
+        runCompanyDeletes();
+      }
     },
-    [companies, activeId],
+    [companies, activeId, runCompanyDeletes],
   );
 
   // Load the company list from the Google Sheet (every computer does this when the app starts)
@@ -529,7 +547,9 @@ export function StoreProvider({ children }) {
       const sec = await sheets.secure(SHEET);
       if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
       if (sec.state === 'legacy') throw new Error(OUTDATED_SCRIPT);
-      const remote = await sheets.listCompanies(SHEET);
+      await runCompanyDeletes();
+      const gone = new Set(LS.get('ay.companyDeletes', []).map((x) => x.id));
+      const remote = (await sheets.listCompanies(SHEET)).filter((r) => !gone.has(String(r.id)));
       const merged = mergeCompanies(companiesRef.current, remote);
       setCompanies(merged);
       setCompaniesSync({ status: 'ok', message: '', count: remote.length, at: new Date().toISOString() });
@@ -538,7 +558,7 @@ export function StoreProvider({ children }) {
       setCompaniesSync({ status: 'error', message: e.message });
       throw e;
     }
-  }, []);
+  }, [runCompanyDeletes]);
 
   // first start on a computer: list the companies from the sheet, and open the only one if there is one
   useEffect(() => {
@@ -585,7 +605,8 @@ export function StoreProvider({ children }) {
       const sec = await secureSheet(url);
       if (sec.state === 'locked') throw new Error(KEY_MESSAGE);
       // company settings (theme, templates, shortcuts…): keep the most recent copy
-      const remoteCos = await sheets.listCompanies(url);
+      const gone = new Set(LS.get('ay.companyDeletes', []).map((x) => x.id));
+      const remoteCos = (await sheets.listCompanies(url)).filter((r) => !gone.has(String(r.id)));
       const remoteMe = remoteCos.find((c) => String(c.id) === company.id);
       setCompanies((list) => mergeCompanies(list, remoteCos));
       if (!remoteMe || newer(company, remoteMe)) await pushCompany(company);
@@ -637,6 +658,7 @@ export function StoreProvider({ children }) {
     syncStatus: sync.status,
     companiesError: companiesSync.status === 'error',
     fetchCompanies,
+    runDeletes: runCompanyDeletes,
   };
 
   // Upload everything (overwrite the Google Sheet with local data)

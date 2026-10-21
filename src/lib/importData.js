@@ -236,6 +236,18 @@ export function buildRecords(byKind, data) {
   return out;
 }
 
+// A backup must hold the book tables as lists — anything else would break the whole app once loaded
+const BOOK_TABLES = ['accounts', 'items', 'customers', 'vendors', 'txns', 'memorized'];
+export function backupProblem(json) {
+  const d = json?.data;
+  if (!d || typeof d !== 'object' || !Array.isArray(d.accounts)) return 'This JSON file is not an AY Toys backup.';
+  for (const t of BOOK_TABLES) {
+    if (d[t] === undefined) continue;
+    if (!Array.isArray(d[t]) || d[t].some((r) => !r || typeof r !== 'object' || Array.isArray(r))) return `This backup is damaged (the "${t}" list is not readable).`;
+  }
+  return '';
+}
+
 // One uploaded file → what it holds. kind: forced list kind for a plain CSV ('' = work it out).
 // Returns { format: 'backup', json } | { format: 'lists', byKind, txnLines } | { error } | { needKind: true }.
 export async function readDataFile(file, kind = '') {
@@ -254,7 +266,8 @@ export async function readDataFile(file, kind = '') {
     } catch {
       return { error: 'That file is not valid JSON.' };
     }
-    if (!json.data?.accounts) return { error: 'This JSON file is not an AY Toys backup.' };
+    const bad = backupProblem(json);
+    if (bad) return { error: bad };
     return { format: 'backup', json };
   }
   if (name.endsWith('.iif') || /^!(ACCNT|CUST|VEND|INVITEM|TRNS)\t/m.test(text)) {

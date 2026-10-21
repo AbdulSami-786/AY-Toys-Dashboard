@@ -6,7 +6,16 @@ import { PrintProvider } from './components/print';
 import { useTabLock } from './store/tabLock';
 import { UsersProvider } from './store/users';
 import UserGate from './windows/Login';
+import ErrorBoundary from './components/ErrorBoundary';
 import './styles.css';
+
+// The web font loads in the background (not blocking, so without internet the page does not wait for it)
+{
+  const font = document.createElement('link');
+  font.rel = 'stylesheet';
+  font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+  document.head.appendChild(font);
+}
 
 // Only one tab works on the books at a time (otherwise the tabs overwrite each other's changes)
 function TabGuard({ children }) {
@@ -41,19 +50,21 @@ function TabGuard({ children }) {
 const TabEpoch = ({ children }) => children;
 
 createRoot(document.getElementById('root')).render(
-  <TabGuard>
-    <UsersProvider>
-      <StoreProvider>
-        <DialogProvider>
-          <PrintProvider>
-            <UserGate>
-              <App />
-            </UserGate>
-          </PrintProvider>
-        </DialogProvider>
-      </StoreProvider>
-    </UsersProvider>
-  </TabGuard>,
+  <ErrorBoundary whole>
+    <TabGuard>
+      <UsersProvider>
+        <StoreProvider>
+          <DialogProvider>
+            <PrintProvider>
+              <UserGate>
+                <App />
+              </UserGate>
+            </PrintProvider>
+          </DialogProvider>
+        </StoreProvider>
+      </UsersProvider>
+    </TabGuard>
+  </ErrorBoundary>,
 );
 
 // Offline: the built app keeps a copy of its own files (public/sw.js) so it opens without internet.

@@ -148,7 +148,9 @@ connects to it by itself — nothing to paste, no keys to copy between computers
 **One-time setup (about 5 minutes):**
 
 1. Create a Google Sheet, e.g. **AY Toys Database**.
-2. **Extensions › Apps Script**. Delete the sample code, paste [`apps-script/Code.gs`](apps-script/Code.gs) and click **Save**.
+2. Copy `src/config.example.js` to `src/config.js`, put a new key in `OWNER_KEY` (`node scripts/new-owner-key.mjs` makes one) and run
+   `npm run sheet-code`. **Extensions › Apps Script**: delete the sample code, paste the generated `apps-script/Code.deploy.gs`
+   (it is `Code.gs` with your key filled in; it is not kept in git) and click **Save**.
 3. In the toolbar choose the function **`setup`** and click **Run**, then allow the permissions. It creates every tab,
    locks the sheet to the owner key and adds a **Start Here** tab (status, companies, help). After reloading the sheet
    there is also an **AY Toys** menu: *Set up / repair this sheet*, *Refresh status*, *Lock to the owner key in this code*.
@@ -184,15 +186,17 @@ What happens then:
 - Every change is saved on the computer first, so the app stays fast and works offline; changes upload in the
   background and retry automatically. **Company › Google Sheets Sync** shows the status and has *Sync now* / *Upload all*.
 
-**Keep `src/config.js` private** (don't publish the source in a public repository): with the URL and the key, anyone
-could read or change the books. Also keep the dashboard address itself private — whoever opens it gets the books.
+**Keep `src/config.js` private**: it is listed in `.gitignore` and must never be committed or published (the repository
+may be public — only `src/config.example.js` belongs in it). With the URL and the key, anyone could read or change the
+books and read the users' password hashes. Never commit the client's data files either (`old data/` is ignored).
+The key is inside every copy of the app, so give the program only to people who may open the books.
 
 **Changing things later**
 
 - Edited `Code.gs`? Paste it, **Save**, run **`setup`** once (it never deletes data), then use **Deploy › Manage
   deployments › Edit › Version: New version** so the URL stays the same. (A *new deployment* gets a new URL, which then
   has to go into `src/config.js` again.)
-- New owner key: change `OWNER_KEY` in `src/config.js` and `APP_OWNER_KEY` in `Code.gs`, then in the sheet use
+- New owner key: change `OWNER_KEY` in `src/config.js`, run `npm run sheet-code`, paste the new `Code.deploy.gs`, then in the sheet use
   **AY Toys › Lock to the owner key in this code** (or delete `OWNER_KEY` in Apps Script **Project Settings › Script
   properties** and run `setup`).
 - Made a mistake in the sheet? **File › Version history** brings back an earlier copy.
@@ -231,7 +235,7 @@ then **Deploy › Manage deployments › Edit › Version: New version › Deplo
 ## Project layout
 
 ```
-src/config.js              the one Google Sheet (Web App URL) + owner key
+src/config.js              the one Google Sheet (Web App URL) + owner key (private, not in git; see config.example.js)
 apps-script/Code.gs        Google Apps Script backend (paste into your sheet)
 src/lib/ledger.js          double-entry posting engine (journal lines, avg-cost inventory, open balances)
 src/lib/reports.js         all report builders

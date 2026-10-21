@@ -48,6 +48,29 @@ const session = {
   },
 };
 
+// Guessing passwords: after 5 wrong tries in a row the login waits 30 s, then twice as long each time (up to 15 min).
+// Kept in localStorage so closing and reopening the program does not reset it.
+const LS_GUARD = 'ay.loginGuard';
+const guard = {
+  wait() {
+    const g = read(LS_GUARD, {});
+    const left = Math.ceil(((g.until || 0) - Date.now()) / 1000);
+    return left > 0 ? `Too many wrong passwords. Try again in ${left > 60 ? Math.ceil(left / 60) + ' minutes' : left + ' seconds'}.` : '';
+  },
+  fail() {
+    const g = read(LS_GUARD, {});
+    const fails = (g.fails || 0) + 1;
+    write(LS_GUARD, { fails, until: fails >= 5 ? Date.now() + Math.min(30000 * 2 ** (fails - 5), 900000) : 0 });
+  },
+  ok() {
+    try {
+      localStorage.removeItem(LS_GUARD);
+    } catch {
+      /* ignore */
+    }
+  },
+};
+
 // newest version of each user (by updatedAt)
 function mergeUsers(local, remote) {
   const by = new Map(local.map((u) => [u.id, u]));
@@ -177,11 +200,17 @@ export function UsersProvider({ children }) {
   /** → '' when logged in, else the reason */
   const login = useCallback(
     async (username, password) => {
+      const wait = guard.wait();
+      if (wait) return wait;
       const name = String(username || '').trim().toLowerCase();
       const u = usersRef.current.find((x) => !x.deleted && String(x.username || '').toLowerCase() === name);
       // the same work for unknown users, so the answer time does not tell which usernames exist
       const hash = await hashPassword(password, u?.salt || 'no-such-user', u?.rounds);
-      if (!u || !sameHash(hash, u.hash)) return 'Wrong username or password.';
+      if (!u || !sameHash(hash, u.hash)) {
+        guard.fail();
+        return 'Wrong username or password.';
+      }
+      guard.ok();
       if (u.active === false) return 'This user is switched off. Ask the Super Admin.';
       session.set(u.id);
       setMeId(u.id);
@@ -198,8 +227,14 @@ export function UsersProvider({ children }) {
     async (password) => {
       const u = usersRef.current.find((x) => x.id === meId);
       if (!u) return 'Please log in again.';
+      const wait = guard.wait();
+      if (wait) return wait;
       const hash = await hashPassword(password, u.salt, u.rounds);
-      if (!sameHash(hash, u.hash)) return 'Wrong password.';
+      if (!sameHash(hash, u.hash)) {
+        guard.fail();
+        return 'Wrong password.';
+      }
+      guard.ok();
       setLocked(false);
       return '';
     },

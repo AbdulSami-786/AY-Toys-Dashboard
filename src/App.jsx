@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Search, ChevronsLeft, ChevronsRight, X, Cloud, CloudOff, RefreshCw, AlertCircle, Settings2, Menu, UserCircle } from 'lucide-react';
 import MenuBar from './components/MenuBar';
+import ErrorBoundary from './components/ErrorBoundary';
 import { MENUS, GLOBAL_KEYS, comboFromEvent } from './lib/commands';
 import { useStore } from './store/store';
 import { WindowsProvider, useWindows, ThisWindowProvider } from './store/windows';
@@ -13,6 +14,7 @@ import { usePerm, useUsers } from './store/users';
 import { ChangePassword } from './windows/Users';
 import { pageKey } from './lib/permissions';
 import { downloadFile } from './lib/format';
+import { backupProblem } from './lib/importData';
 import { fmtDate, today } from './lib/dates';
 
 // With more than one shop, every new session starts on the shop screen (figures of each shop, all-shop reports).
@@ -305,15 +307,15 @@ function Shell() {
     if (!f) return;
     try {
       const json = JSON.parse(await f.text());
-      if (!json.data?.accounts) throw new Error('Not an AY Toys backup file');
+      const bad = backupProblem(json);
+      if (bad) throw new Error(bad);
       const ok = await dlg.confirm(
-        `Restore backup of "${json.company?.name}" from ${new Date(json.exportedAt).toLocaleString()} into the current company "${company.name}"?\n\nAll current data of this company will be replaced.`,
+        `Restore backup of "${json.company?.name || 'a shop'}"${json.exportedAt ? ' from ' + new Date(json.exportedAt).toLocaleString() : ''} into the current company "${company.name}"?\n\nAll current data of this company will be replaced.`,
         { ok: 'Restore', danger: true },
       );
       if (!ok) return;
-      replaceData(json.data);
+      replaceData(json.data); // also queues the full upload to the sheet (it waits if there is no internet)
       closeAll();
-      if (store.sheetUrl) await store.pushAll();
       dlg.toast('Backup restored');
     } catch (err) {
       dlg.alert('Restore failed: ' + err.message);
@@ -588,7 +590,9 @@ const WindowHost = memo(function WindowHost({ win, active }) {
   const me = useMemo(() => ({ id: win.id }), [win.id]);
   return (
     <div className="win-host" hidden={!active}>
-      <ThisWindowProvider value={me}>{Comp ? <Comp {...win.props} winId={win.id} active={active} /> : <div className="pad">Unknown window</div>}</ThisWindowProvider>
+      <ErrorBoundary>
+        <ThisWindowProvider value={me}>{Comp ? <Comp {...win.props} winId={win.id} active={active} /> : <div className="pad">Unknown window</div>}</ThisWindowProvider>
+      </ErrorBoundary>
     </div>
   );
 });

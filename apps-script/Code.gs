@@ -50,7 +50,9 @@
 var VERSION = 7;
 
 // The same as OWNER_KEY in the app's src/config.js. setup locks the sheet to it.
-var APP_OWNER_KEY = '5RC3NlRIqX1pyZypZLW6Afjf6fl2Rwtx';
+// Never commit the real key: leave this empty here and paste apps-script/Code.deploy.gs (made by `npm run sheet-code`,
+// it has the key filled in and is not kept in git) into the Apps Script editor.
+var APP_OWNER_KEY = '';
 
 var TAB_NAMES = {
   accounts: 'Chart of Accounts',
@@ -86,7 +88,7 @@ var TAB_COLORS = { companies: '#2ca01c', accounts: '#1a73e8', items: '#f9ab00', 
 var SYSTEM_CODE = 'SYSTEM';
 var USERS_TABLE = 'Users';
 var RESET_ROUNDS = 2000; // PBKDF2 rounds of a password set here (the app makes it stronger at the next login)
-var MIN_PASSWORD = 6;
+var MIN_PASSWORD = 8;
 var BRAND = '#2ca01c';
 var HEAD_BG = '#2ca01c';
 var HEAD_FG = '#ffffff';
@@ -1218,7 +1220,7 @@ function publishLedgers_(req) {
 function writeShared_(sh, req, u) {
   if (!validToken_(u.token)) throw new Error('Invalid ledger link id');
   var pass = String(u.pass || '').trim();
-  if (pass.length < 4) throw new Error('Ledger password must be at least 4 characters');
+  if (pass.length < 6) throw new Error('Ledger password must be at least 6 characters');
   var data = String(u.data || '');
   var parts = [];
   for (var i = 0; i < data.length; i += SHARE_CHUNK) parts.push('~' + data.slice(i, i + SHARE_CHUNK));

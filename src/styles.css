@@ -4458,3 +4458,442 @@ table.rpt.fixed td {
     grid-template-columns: 1fr;
   }
 }
+
+/* =====================================================================
+   Polish: smoother, cleaner (all screens) and a tidy phone layout
+   ===================================================================== */
+:root {
+  --radius: 6px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 24%, transparent) transparent;
+}
+::selection {
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+/* controls: softer corners, quicker feedback */
+input,
+select,
+textarea {
+  border-radius: 5px;
+}
+.btn {
+  border-radius: 6px;
+  box-shadow: 0 1px 0 rgb(16 24 40 / 4%);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.08s var(--ease);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.btn.primary {
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+.icon-btn,
+.tb-btn,
+.tab,
+.wtab,
+.ib-item,
+.flow-node,
+.rc-card,
+.kpi,
+.menu-top > button {
+  transition: background 0.15s var(--ease), color 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
+}
+.tbl tbody tr td {
+  transition: background 0.1s;
+}
+.wtab {
+  border-radius: 7px 7px 0 0;
+}
+.flow-panel,
+.chart-card,
+.kpi,
+.txn-paper {
+  border-radius: 10px;
+}
+.flow-node:hover {
+  box-shadow: var(--shadow);
+}
+.kpi:hover,
+.rc-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+/* a window fades in when it is brought to the front */
+.win-host:not([hidden]) {
+  animation: win-in 0.2s var(--ease);
+}
+@keyframes win-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+.toast {
+  border-radius: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------- phones ---------------- */
+@media (max-width: 800px) {
+  /* a field that spans columns must not make extra (overlapping) columns in a narrower grid */
+  .span2,
+  .span3 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  body {
+    overscroll-behavior: none;
+  }
+  .app {
+    height: 100dvh;
+  }
+
+  /* menu bar: one clean swipeable row, no scrollbar, no keyboard underlines */
+  .menubar {
+    height: 44px;
+    padding: 0 6px;
+    gap: 2px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    border-bottom-color: var(--border);
+    background: var(--surface);
+  }
+  .menubar::-webkit-scrollbar {
+    display: none;
+  }
+  .menu-top {
+    flex: none;
+  }
+  .menu-top > button {
+    padding: 0 13px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    color: var(--text-2);
+  }
+  .menu-top > button u,
+  .btn u {
+    text-decoration: none;
+  }
+
+  /* window tabs */
+  .wtabs {
+    padding: 6px 8px 0;
+    gap: 4px;
+    scrollbar-width: none;
+  }
+  .wtabs::-webkit-scrollbar {
+    display: none;
+  }
+  .wtab {
+    height: 34px;
+    max-width: 170px;
+    font-size: 13px;
+    padding: 0 6px 0 12px;
+  }
+  .wtab.on {
+    height: 35px;
+  }
+  .wtab .icon-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* touch-sized controls */
+  .btn {
+    height: 38px;
+    padding: 0 14px;
+    border-radius: 8px;
+  }
+  .btn.sm {
+    height: 34px;
+    padding: 0 11px;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .field > input,
+  .field > select,
+  .field > .combo input,
+  .field > .date-input input,
+  .lf input,
+  .lf select {
+    height: 42px;
+    border-radius: 8px;
+  }
+  .field > textarea {
+    min-height: 72px;
+    border-radius: 8px;
+  }
+  .field-label {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .grid2,
+  .grid3,
+  .grid4 {
+    gap: 12px;
+  }
+  /* short pairs stay side by side: date + number, qty + rate */
+  .doc-meta {
+    gap: 10px;
+  }
+
+  /* window headings and the toolbars under them */
+  .win-title {
+    padding: 12px 14px 10px;
+    gap: 8px;
+  }
+  .win-title h1 {
+    font-size: 19px;
+  }
+  .toolbar.flat {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .toolbar.flat .btn,
+  .toolbar.flat select {
+    height: 38px;
+  }
+  .toolbar.flat input:not([type='checkbox']):not([type='radio']) {
+    flex: 1 1 100%;
+    height: 40px;
+    width: 100%;
+  }
+  .toolbar.flat select {
+    flex: 1 1 140px;
+  }
+
+  /* transaction ribbon: Previous / Save / Print… in ONE row you swipe, not three rows */
+  .ribbon-tabs {
+    padding: 0 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .ribbon-tabs button {
+    padding: 9px 14px 8px;
+    font-size: 13px;
+    flex: none;
+  }
+  .ribbon .toolbar:not(.flat) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 8px 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ribbon .toolbar:not(.flat)::-webkit-scrollbar {
+    display: none;
+  }
+  .tb-btn {
+    flex: none;
+    min-width: 60px;
+    padding: 6px 8px;
+    border-radius: 8px;
+  }
+  .tb-sep {
+    flex: none;
+  }
+  .txn-head {
+    gap: 10px;
+  }
+  .txn-head .field {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .txn-paper {
+    border-radius: 12px;
+  }
+  .doc-title {
+    font-size: 22px;
+  }
+
+  /* tables keep their columns and scroll sideways, with a visible grip */
+  .tbl-wrap,
+  .lines {
+    -webkit-overflow-scrolling: touch;
+  }
+  .tbl td {
+    height: 36px;
+  }
+  .tbl th {
+    height: 34px;
+  }
+
+  /* home page: tidy tiles in a grid, no stray arrows */
+  .home-main {
+    padding: 10px 10px 20px;
+  }
+  .home-tabs button {
+    padding: 8px 18px;
+  }
+  .flow-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .flow-panel {
+    padding: 30px 8px 10px;
+    margin-bottom: 12px;
+  }
+  .flow-row,
+  .flow-col {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .flow-row + .flow-row {
+    margin-top: 6px !important;
+  }
+  .flow-arrow {
+    display: none;
+  }
+  .flow-node {
+    width: auto;
+    min-width: 0;
+    padding: 10px 2px 8px;
+    font-size: 12px;
+    word-break: break-word;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  .flow-node:active {
+    background: var(--primary-50);
+    border-color: var(--primary-200);
+  }
+  .kpis {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .kpi .val {
+    font-size: 17px;
+  }
+
+  /* report center: categories on top as a swipeable row, one report per line */
+  .rc {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .rc-nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    scrollbar-width: none;
+  }
+  .rc-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .rc-nav button {
+    flex: none;
+    width: auto;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .rc-nav button.on {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+  }
+  .rc-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 10px;
+    gap: 8px;
+  }
+  .rc-card {
+    padding: 12px 14px;
+    gap: 2px;
+  }
+  .rc-thumb {
+    display: none;
+  }
+
+  /* messages sit above the bottom action bar and use the width */
+  .toasts {
+    left: 12px;
+    right: 12px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    align-items: stretch;
+  }
+  .toast {
+    max-width: none;
+  }
+}
+@media (max-width: 640px) {
+  .iconbar:not(.open),
+  .iconbar.collapsed:not(.open) {
+    box-shadow: none; /* the closed menu must not cast a shadow on the screen */
+  }
+  .flow-row,
+  .flow-col {
+    align-items: stretch;
+  }
+  .flow-node {
+    justify-content: flex-start;
+    min-height: 98px;
+  }
+}
+@media (max-width: 640px) {
+  /* 2 or 4 tiles sit in a neat 2-column block; 3, 5, 6… in three columns */
+  .flow-row:has(> .flow-node:nth-of-type(4):last-of-type),
+  .flow-row:has(> .flow-node:nth-of-type(2):last-of-type),
+  .flow-col:has(> .flow-node:nth-of-type(4):last-of-type) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* tablets: the details pane scrolls inside its column instead of pushing past the screen edge */
+.center {
+  grid-template-columns: 340px minmax(0, 1fr);
+}
+.center-right > *,
+.center-txns {
+  min-width: 0;
+}
+.center-txns {
+  overflow: auto;
+}
+@media (max-width: 1100px) and (min-width: 801px) {
+  .center {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+  .info-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .center {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

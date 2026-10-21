@@ -27,8 +27,6 @@ export function ItemModal({ initial, onClose, onSaved }) {
     barcode: '',
     category: '',
     uom: 'pcs',
-    description: '',
-    purchaseDescription: '',
     cost: '',
     price: '',
     percent: '',
