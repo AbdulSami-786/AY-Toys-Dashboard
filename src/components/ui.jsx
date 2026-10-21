@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 
@@ -173,6 +173,18 @@ export function Kbd({ children }) {
 // Right-click context menu
 export function useContextMenu() {
   const [menu, setMenu] = useState(null);
+  const ref = useRef(null);
+  // keep the menu fully on screen: a menu opened near the right or bottom edge (the user button!) slides back in
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!menu || !el) return;
+    const m = 8;
+    const r = el.getBoundingClientRect();
+    const left = Math.max(m, Math.min(menu.x, window.innerWidth - r.width - m));
+    const top = menu.y + r.height > window.innerHeight - m ? Math.max(m, window.innerHeight - r.height - m) : menu.y;
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  }, [menu]);
   useEffect(() => {
     if (!menu) return;
     const close = () => setMenu(null);
@@ -189,7 +201,7 @@ export function useContextMenu() {
   };
   const node = menu
     ? createPortal(
-        <div className="ctx-menu" style={{ left: menu.x, top: menu.y }} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="ctx-menu" ref={ref} style={{ left: menu.x, top: menu.y }} onMouseDown={(e) => e.stopPropagation()}>
           {menu.items.map((it, i) =>
             it === '-' ? (
               <div key={i} className="menu-sep" />

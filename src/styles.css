@@ -4897,3 +4897,53 @@ textarea {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* menus never leave the screen */
+.ctx-menu {
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow-y: auto;
+  animation: pop 0.12s ease-out;
+}
+@media (max-width: 640px) {
+  .ctx-menu {
+    min-width: 230px;
+    border-radius: 10px;
+    padding: 6px 0;
+  }
+  .ctx-menu .menu-item,
+  .menu-drop .menu-item {
+    height: 44px;
+    font-size: 15px;
+  }
+  /* the menu bar scrolls sideways, so its drop-downs are fixed to the screen instead of clipped inside the bar */
+  .menu-drop {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    top: calc(50px + env(safe-area-inset-top) + 44px);
+    min-width: 0;
+    max-height: calc(100dvh - 120px);
+    overflow-y: auto;
+    border-radius: 10px;
+    z-index: 3000;
+  }
+}
+@media (max-width: 640px) {
+  /* sub-menus open inline under their item instead of beside it */
+  .menu-drop .menu-item {
+    flex-wrap: wrap;
+  }
+  .menu-drop .menu-item .menu-drop {
+    position: static;
+    flex: 1 0 100%;
+    min-width: 0;
+    max-height: none;
+    margin: 4px -14px 0 -22px;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--surface-2);
+  }
+}
