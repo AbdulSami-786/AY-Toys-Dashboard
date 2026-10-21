@@ -164,6 +164,9 @@ const COLS = {
   sku: { label: 'SKU', width: 11 },
   item: { label: 'Item', width: 22 },
   desc: { label: 'Description', width: 34 },
+  pkg: { label: 'Pkg', width: 7, align: 'right' },
+  ctn: { label: 'Ctn', width: 7, align: 'right' },
+  pcs: { label: 'Pcs', width: 7, align: 'right' },
   qty: { label: 'Qty', width: 9, align: 'right' },
   uom: { label: 'U/M', width: 7 },
   rate: { label: 'Rate', width: 12, align: 'right' },
@@ -171,12 +174,12 @@ const COLS = {
   amount: { label: 'Amount', width: 14, align: 'right' },
 };
 export const COLUMN_KEYS = {
-  sales: ['no', 'sku', 'item', 'desc', 'qty', 'uom', 'rate', 'tax', 'amount'],
+  sales: ['no', 'sku', 'item', 'desc', 'pkg', 'ctn', 'pcs', 'qty', 'uom', 'rate', 'tax', 'amount'],
   purchase: ['no', 'sku', 'item', 'desc', 'qty', 'uom', 'rate', 'amount'],
   payment: ['no', 'item', 'desc', 'rate', 'amount'],
 };
 const COL_DEFAULT_OFF = new Set(['sku', 'uom', 'tax']);
-export const SCREEN_COLUMNS = { sales: ['desc', 'uom'], purchase: ['desc', 'uom'], payment: [] };
+export const SCREEN_COLUMNS = { sales: ['desc', 'pkg', 'ctn', 'pcs', 'uom'], purchase: ['desc', 'uom'], payment: [] };
 
 export function defaultColumnLabel(key, formType) {
   const cat = formCat(formType);
@@ -407,10 +410,14 @@ export function normalizeTemplate(t) {
   const std = standardTemplate(t.formType);
   const cols = Array.isArray(t.columns) ? t.columns : std.columns;
   const known = new Set(cols.map((c) => c.key));
-  const columns = [
-    ...cols.filter((c) => COLS[c.key] && COLUMN_KEYS[formCat(std.formType)].includes(c.key)).map((c) => ({ ...std.columns.find((s) => s.key === c.key), ...c })),
-    ...std.columns.filter((c) => !known.has(c.key)).map((c) => ({ ...c, print: false })),
-  ];
+  const columns = cols.filter((c) => COLS[c.key] && COLUMN_KEYS[formCat(std.formType)].includes(c.key)).map((c) => ({ ...std.columns.find((s) => s.key === c.key), ...c }));
+  // a column added later (Pkg / Ctn / Pcs) starts switched off, placed before the column that follows it in the standard layout
+  std.columns.forEach((c, i) => {
+    if (known.has(c.key)) return;
+    const next = std.columns.slice(i + 1).find((n) => columns.some((x) => x.key === n.key));
+    const at = next ? columns.findIndex((x) => x.key === next.key) : columns.length;
+    columns.splice(at, 0, { ...c, print: false });
+  });
   return {
     ...std,
     ...t,
@@ -530,6 +537,16 @@ const lineHasData = (l) => l && (l.itemId || l.description || (l.amount !== '' &
  * Turn a transaction into printable values for a template.
  * L = lookups (itemMap, customerMap, vendorMap, accountMap); ledger is optional (balances / applied docs).
  */
+const filled = (v) => v !== undefined && v !== null && v !== '';
+
+/** { ctn, pcs, qty } over the lines, or null when no line was sold by the carton */
+export function cartonTotals(lines) {
+  const sold = (lines || []).filter((l) => filled(l.qty));
+  if (!sold.some((l) => num(l.ctn) > 0)) return null;
+  const sum = (k) => Math.round(sold.reduce((s, l) => s + num(l[k]), 0) * 1000) / 1000;
+  return { ctn: sum('ctn'), pcs: sum('pcs'), qty: sum('qty') };
+}
+
 export function buildDocContext({ txn: t, company, L, ledger, template }) {
   const tpl = template;
   const type = t.type;
@@ -553,7 +570,7 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
     const c = salesTotals((t.lines || []).filter(lineHasData), t.taxRate, L.itemMap);
     lines = c.lines.map((l) => {
       const it = L.itemMap.get(l.itemId);
-      return { sku: it?.sku || '', item: it?.name || '', desc: l.description || '', qty: l.qty, uom: l.uom || '', rate: it?.type === 'Discount' && String(l.rate).includes('%') ? String(l.rate) : l.rate, amount: l.amount, tax: l.taxable ? 'T' : '' };
+      return { sku: it?.sku || '', item: it?.name || '', desc: l.description || '', pkg: l.pkg, ctn: l.ctn, pcs: l.pcs, qty: l.qty, uom: l.uom || '', rate: it?.type === 'Discount' && String(l.rate).includes('%') ? String(l.rate) : l.rate, amount: l.amount, tax: l.taxable ? 'T' : '' };
     });
     subtotal = c.subtotal;
     tax = c.tax;
@@ -645,13 +662,18 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
       sku: l.sku || '',
       item: l.item || '',
       desc: l.desc || '',
-      qty: l.qty !== undefined && l.qty !== '' && l.qty !== null ? fmtQty(l.qty) : '',
+      pkg: filled(l.pkg) && num(l.pkg) ? fmtQty(l.pkg) : '',
+      ctn: filled(l.ctn) ? fmtQty(l.ctn) : '',
+      pcs: filled(l.pcs) ? fmtQty(l.pcs) : '',
+      qty: filled(l.qty) ? fmtQty(l.qty) : '',
       uom: l.uom || '',
       rate: l.rate !== undefined && l.rate !== '' && l.rate !== null ? (typeof l.rate === 'string' && l.rate.includes('%') ? l.rate : money(l.rate)) : '',
       tax: l.tax || '',
       amount: money(l.amount),
     })),
     totals,
+    // carton invoices: total cartons, loose pieces and quantity, shown as the last row of the table
+    lineTotals: cartonTotals(lines),
     stamp: t.voided ? 'VOID' : paid ? 'PAID' : '',
     logo: company?.logo || '',
     company: company || {},
@@ -716,10 +738,10 @@ export function sampleDoc(formType, company, template) {
       memo: 'Sample memo',
       taxRate: num(company?.taxRate),
       lines: [
-        { itemId: 's1', description: 'Remote control racing car 1:16, rechargeable', qty: 12, uom: 'pcs', rate: 2450, amount: 29400, taxable: num(company?.taxRate) > 0 },
-        { itemId: 's2', description: 'Building blocks set — 500 pieces', qty: 5, uom: 'box', rate: 3800, amount: 19000, taxable: num(company?.taxRate) > 0 },
-        { itemId: 's3', description: 'Teddy bear 12 inch, assorted colours', qty: 3, uom: 'dozen', rate: 6600, amount: 19800, taxable: false },
-        { itemId: 's4', description: 'Jigsaw puzzle 1000 pieces', qty: 10, uom: 'pcs', rate: 950, amount: 9500, taxable: false },
+        { itemId: 's1', description: 'Remote control racing car 1:16, rechargeable', pkg: 12, ctn: 1, pcs: 0, qty: 12, uom: 'pcs', rate: 2450, amount: 29400, taxable: num(company?.taxRate) > 0 },
+        { itemId: 's2', description: 'Building blocks set — 500 pieces', pkg: 1, ctn: 5, pcs: 0, qty: 5, uom: 'box', rate: 3800, amount: 19000, taxable: num(company?.taxRate) > 0 },
+        { itemId: 's3', description: 'Teddy bear 12 inch, assorted colours', pkg: 3, ctn: 0, pcs: 3, qty: 3, uom: 'dozen', rate: 6600, amount: 19800, taxable: false },
+        { itemId: 's4', description: 'Jigsaw puzzle 1000 pieces', pkg: 10, ctn: 1, pcs: 0, qty: 10, uom: 'pcs', rate: 950, amount: 9500, taxable: false },
       ],
     };
   } else if (cat === 'purchase') {

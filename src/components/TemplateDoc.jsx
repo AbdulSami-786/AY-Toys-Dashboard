@@ -1,10 +1,11 @@
 import { FONTS, contentSize, pageSize, fieldLabel, columnLabel, columnAlign, PX_PER_MM } from '../lib/templates';
-import { num } from '../lib/format';
+import { num, qty as fmtQty } from '../lib/format';
 
 export const accentOf = (tpl, company) => tpl.style.accent || company?.theme?.primary || '#2ca01c';
 
 const HANDLES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 const CELL_CLASS = { rate: 'n', amount: 'n', qty: 'q' };
+const QTY_KEYS = ['pkg', 'ctn', 'pcs', 'qty'];
 
 /**
  * Renders one printable document from a template.
@@ -17,8 +18,10 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const cols = tpl.columns.filter((c) => c.print);
   const totalW = cols.reduce((s, c) => s + Math.max(1, num(c.width)), 0) || 1;
   const pct = (c) => (Math.max(1, num(c.width)) / totalW) * 100 + '%';
-  const uomInQty = !cols.some((c) => c.key === 'uom');
+  const uomInQty = !cols.some((c) => c.key === 'uom' || c.key === 'ctn');
   const bodyMin = st.footerAtBottom ? Math.max(15, H - tpl.headerHeight - tpl.footerHeight - 4) : 0;
+  // "Total" goes in the column just before the first quantity column
+  const totalLabelAt = Math.max(0, cols.findIndex((c) => QTY_KEYS.includes(c.key)) - 1);
   const framed = st.borders === 'grid' || st.borders === 'columns';
 
   const cell = (l, key) => (key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
@@ -40,7 +43,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
             <tr>
               {cols.map((c) => (
                 <th key={c.key} style={{ textAlign: columnAlign(c.key) }}>
-                  {columnLabel(tpl, c)}
+                  {c.key === 'qty' && !c.label && cols.some((x) => x.key === 'ctn') ? 'T/Qty' : columnLabel(tpl, c)}
                 </th>
               ))}
             </tr>
@@ -55,6 +58,15 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
                 ))}
               </tr>
             ))}
+            {ctx.lineTotals && cols.some((c) => c.key === 'ctn' || c.key === 'pcs') && (
+              <tr className="tdoc-total">
+                {cols.map((c, i) => (
+                  <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
+                    {QTY_KEYS.includes(c.key) ? (c.key === 'pkg' ? '' : fmtQty(ctx.lineTotals[c.key])) : i === totalLabelAt ? 'Total' : ''}
+                  </td>
+                ))}
+              </tr>
+            )}
             {!ctx.lines.length && (
               <tr>
                 <td colSpan={cols.length || 1} className="tdoc-nolines">

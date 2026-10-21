@@ -168,6 +168,7 @@ export const MENUS = [
     items: [
       { label: 'Chart of Accounts', key: 'Ctrl+A', cmd: { open: 'coa' } },
       { label: 'Item List', key: 'Ctrl+L', cmd: { open: 'items' } },
+      { label: 'Add/Edit Multiple List Entries (Items)...', cmd: { open: 'bulkitems' } },
       { label: 'Price Level List', cmd: { open: 'lists', props: { tab: 'priceLevels' } } },
       { label: 'Sales Tax / Customer & Vendor Profile Lists', cmd: { open: 'lists' } },
       { label: 'Templates (Invoice & Bill Designs)', cmd: { open: 'templates' } },

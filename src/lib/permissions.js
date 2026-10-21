@@ -31,6 +31,7 @@ export const PAGE_GROUPS = [
     name: 'Items & Inventory',
     pages: [
       ['items', 'Item List'],
+      ['bulkitems', 'Add/Edit Multiple Items (bulk add)'],
       ['invadjust', 'Adjust Quantity / Value'],
     ],
   },

@@ -4,6 +4,7 @@ import CompanyInfo from './CompanyInfo';
 import SyncWindow from './Sync';
 import ChartOfAccounts from './ChartOfAccounts';
 import ItemList from './ItemList';
+import BulkItems from './BulkItems';
 import NameCenter from './NameCenter';
 import SalesForm from './forms/SalesForm';
 import PurchaseForm from './forms/PurchaseForm';
@@ -37,6 +38,7 @@ export const WINDOW_COMPONENTS = {
   sync: SyncWindow,
   coa: ChartOfAccounts,
   items: ItemList,
+  bulkitems: BulkItems,
   customers: (p) => <NameCenter which="customer" {...p} />,
   vendors: (p) => <NameCenter which="vendor" {...p} />,
   invoice: (p) => <SalesForm type="invoice" {...p} />,
@@ -78,6 +80,7 @@ const TITLES = {
   sync: 'Google Sheets Sync',
   coa: 'Chart of Accounts',
   items: 'Item List',
+  bulkitems: 'Add/Edit Multiple Items',
   customers: 'Customer Center',
   vendors: 'Vendor Center',
   invoice: 'Create Invoices',

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Package, Plus, Pencil, Trash2, FileBarChart, Boxes, ClipboardList, AlertTriangle, Download } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, FileBarChart, Boxes, ClipboardList, AlertTriangle, Download, Table2 } from 'lucide-react';
 import { useStore, useLookups } from '../store/store';
 import { useWindowKeys } from '../store/windows';
 import { useNav } from '../store/nav';
@@ -27,6 +27,7 @@ export function ItemModal({ initial, onClose, onSaved }) {
     barcode: '',
     category: '',
     uom: 'pcs',
+    pkg: '',
     cost: '',
     price: '',
     percent: '',
@@ -70,6 +71,7 @@ export function ItemModal({ initial, onClose, onSaved }) {
     const { openQty, openCost, openDate, ...rec } = f;
     rec.name = rec.name.trim();
     rec.cost = num(rec.cost);
+    rec.pkg = num(rec.pkg);
     rec.price = num(rec.price);
     rec.reorderPoint = num(rec.reorderPoint);
     rec.percent = num(rec.percent);
@@ -129,6 +131,9 @@ export function ItemModal({ initial, onClose, onSaved }) {
           </Field>
           <Field label="U/M">
             <Combo value={f.uom} allowFree onChange={set('uom')} options={L.lists.uom.map((u) => ({ id: u, label: u }))} />
+          </Field>
+          <Field label="Pkg (pcs in 1 carton)">
+            <QtyInput value={f.pkg} onChange={set('pkg')} />
           </Field>
           <Field label="Barcode">
             <input value={f.barcode} onChange={set('barcode')} />
@@ -357,6 +362,9 @@ export default function ItemList() {
         </button>
         <button className="btn sm" disabled={!selected} onClick={() => del(selected)}>
           <Trash2 size={13} />
+        </button>
+        <button className="btn sm" onClick={() => nav.open('bulkitems')} title="Add or edit many items at once, or paste them from Excel">
+          <Table2 size={13} /> Add Multiple
         </button>
         <span className="tb-sep" />
         <button className="btn sm" disabled={!selected} onClick={() => nav.report('quickreport', { itemId: selected.id })}>

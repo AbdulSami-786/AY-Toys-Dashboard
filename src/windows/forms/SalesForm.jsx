@@ -12,6 +12,7 @@ import { useFormTemplate } from '../../store/templates';
 import { NameCombo } from '../NameModals';
 import { ItemModal } from '../ItemList';
 import { salesTotals, txnTotal } from '../../lib/ledger';
+import { cartonTotals } from '../../lib/templates';
 import { money, num, round2, qty as fq } from '../../lib/format';
 import { today, dueFromTerms, fmtDate } from '../../lib/dates';
 import { TXN_TYPES } from '../../store/defaults';
@@ -65,19 +66,34 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     };
   };
 
-  const lineFor = (item, customerId, qty = 1) => {
+  // Pkg = pieces in one carton (set on the item). A line is sold as cartons + loose pieces: qty = ctn × pkg + pcs.
+  const lineFor = (item, customerId, prev) => {
     const c = L.customerMap.get(customerId);
     if (item.type === 'Discount') return { ...blankLine(), itemId: item.id, description: item.description || item.name, qty: '', rate: `${num(item.percent)}%`, amount: 0, taxable: false };
     const rate = priceFor(item, customerId);
-    return { ...blankLine(), itemId: item.id, description: item.description || item.name, qty, uom: item.uom || '', rate, amount: round2(qty * rate), taxable: !!(item.taxable && c?.taxable) };
+    const pkg = num(item.pkg);
+    let ctn = '';
+    let pcs = 1;
+    if (prev && prev.qty !== '' && prev.qty !== undefined) {
+      // changing the item keeps the cartons and pieces already typed
+      ctn = pkg > 0 && num(prev.ctn) ? num(prev.ctn) : '';
+      pcs = pkg > 0 && num(prev.ctn) ? num(prev.pcs) : num(prev.qty);
+    } else if (pkg > 0) {
+      ctn = 1;
+      pcs = 0;
+    }
+    const qty = num(ctn) * pkg + num(pcs);
+    return { ...blankLine(), itemId: item.id, description: item.description || item.name, pkg: pkg || '', ctn, pcs, qty, uom: item.uom || '', rate, amount: round2(qty * rate), taxable: !!(item.taxable && c?.taxable) };
   };
+  // lines saved before cartons existed have only a qty: show it as loose pieces
+  const withCartons = (l) => (l.itemId && l.qty !== '' && l.qty !== undefined && l.ctn === undefined && l.pcs === undefined ? { ...l, ctn: '', pcs: l.qty } : l);
 
   const makeNew = (t) => {
     if (t) {
       return {
         ...t,
         lines: ensureTrailing(
-          (t.lines || []).map((l) => ({ ...blankLine(), ...l, key: Math.random().toString(36).slice(2) })),
+          (t.lines || []).map((l) => withCartons({ ...blankLine(), ...l, key: Math.random().toString(36).slice(2) })),
           blankLine,
           isEmptyLine,
         ),
@@ -118,7 +134,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     let n = makeNew(null);
     if (template) {
       const tpl = memoTemplate(template);
-      n = { ...n, ...tpl, type, num: n.num, date: n.date, lines: ensureTrailing((tpl.lines || []).map((l) => ({ ...blankLine(), ...l })), blankLine, isEmptyLine) };
+      n = { ...n, ...tpl, type, num: n.num, date: n.date, lines: ensureTrailing((tpl.lines || []).map((l) => withCartons({ ...blankLine(), ...l })), blankLine, isEmptyLine) };
       if (type !== 'estimate') n.dueDate = dueFromTerms(n.date, n.terms);
     }
     if (fromId) {
@@ -126,7 +142,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
       if (src) {
         n = customerDefaults({ ...n, customerId: src.customerId }, src.customerId);
         n.lines = ensureTrailing(
-          (src.lines || []).map((l) => ({ ...blankLine(), ...l, key: Math.random().toString(36).slice(2) })),
+          (src.lines || []).map((l) => withCartons({ ...blankLine(), ...l, key: Math.random().toString(36).slice(2) })),
           blankLine,
           isEmptyLine,
         );
@@ -154,6 +170,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
   const calc = useMemo(() => salesTotals(f.lines.filter((l) => !isEmptyLine(l)), f.taxRate, L.itemMap), [f.lines, f.taxRate, L.itemMap]);
   const calcByKey = useMemo(() => new Map(calc.lines.map((l) => [l.key, l])), [calc]);
   const customer = L.customerMap.get(f.customerId);
+  const cartons = useMemo(() => cartonTotals(f.lines.filter((l) => !isEmptyLine(l))), [f.lines]);
   const saved = data.txns.find((t) => t.id === f.id);
   const showTax = num(company.taxRate) > 0 || num(f.taxRate) > 0 || f.lines.some((l) => l.taxable);
   const sells = type === 'invoice' || type === 'salesreceipt';
@@ -188,14 +205,25 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
       if ('itemId' in patch) {
         const it = L.itemMap.get(patch.itemId);
         if (it) {
-          const fresh = lineFor(it, x.customerId, num(lines[i].qty) || 1);
+          const fresh = lineFor(it, x.customerId, lines[i]);
           l = { ...fresh, key: lines[i].key };
         }
-      } else if ('qty' in patch || 'rate' in patch) {
+      } else if ('ctn' in patch || 'pcs' in patch || 'qty' in patch || 'rate' in patch) {
         const it = L.itemMap.get(l.itemId);
         if (it?.type === 'Discount') {
           if (!String(l.rate).includes('%')) l.amount = -Math.abs(num(l.rate));
         } else {
+          const pkg = num(l.pkg) || num(it?.pkg);
+          if (pkg) l.pkg = pkg;
+          if ('ctn' in patch || 'pcs' in patch) {
+            l.qty = l.ctn === '' && l.pcs === '' ? '' : Math.round((num(l.ctn) * pkg + num(l.pcs)) * 1000) / 1000;
+          } else if ('qty' in patch) {
+            // typing the total: the cartons stay, the rest becomes loose pieces
+            const q = num(l.qty);
+            const whole = pkg > 0 && q >= num(l.ctn) * pkg;
+            l.ctn = whole ? l.ctn : '';
+            l.pcs = l.qty === '' ? '' : Math.round((q - (whole ? num(l.ctn) * pkg : 0)) * 1000) / 1000;
+          }
           const q = l.qty === '' || l.qty === undefined ? 1 : num(l.qty);
           l.amount = round2(q * num(l.rate));
         }
@@ -244,7 +272,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     const { key, ...rest } = f;
     return {
       ...rest,
-      lines: c.lines.map(({ key: k, ...l }) => ({ ...l, qty: l.qty === '' ? '' : num(l.qty), amount: round2(l.amount) })),
+      lines: c.lines.map(({ key: k, ...l }) => ({ ...l, qty: l.qty === '' ? '' : num(l.qty), ...(l.ctn !== undefined || l.pcs !== undefined ? { ctn: l.ctn === '' ? '' : num(l.ctn), pcs: l.pcs === '' ? '' : num(l.pcs), pkg: num(l.pkg) || '' } : {}), amount: round2(l.amount) })),
       subtotal: c.subtotal,
       tax: c.tax,
       taxRate: num(f.taxRate),
@@ -449,12 +477,15 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
               <table>
                 <colgroup>
                   <col style={{ width: 34 }} />
-                  <col style={{ width: colOn('desc') ? 210 : undefined }} />
+                  <col style={{ width: colOn('desc') ? 190 : undefined }} />
                   {colOn('desc') && <col />}
-                  <col style={{ width: 80 }} />
-                  {colOn('uom') && <col style={{ width: 64 }} />}
+                  {colOn('pkg') && <col style={{ width: 56 }} />}
+                  {colOn('ctn') && <col style={{ width: 60 }} />}
+                  {colOn('pcs') && <col style={{ width: 60 }} />}
+                  <col style={{ width: 72 }} />
+                  {colOn('uom') && <col style={{ width: 56 }} />}
+                  <col style={{ width: 96 }} />
                   <col style={{ width: 110 }} />
-                  <col style={{ width: 120 }} />
                   {showTax && <col style={{ width: 44 }} />}
                   <col style={{ width: 30 }} />
                 </colgroup>
@@ -463,7 +494,10 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                     <th>#</th>
                     <th>{colLbl('item', 'Item')}</th>
                     {colOn('desc') && <th>{colLbl('desc', 'Description')}</th>}
-                    <th className="r">{colLbl('qty', 'Qty')}</th>
+                    {colOn('pkg') && <th className="r">{colLbl('pkg', 'Pkg')}</th>}
+                    {colOn('ctn') && <th className="r">{colLbl('ctn', 'Ctn')}</th>}
+                    {colOn('pcs') && <th className="r">{colLbl('pcs', 'Pcs')}</th>}
+                    <th className="r">{colLbl('qty', 'T/Qty')}</th>
                     {colOn('uom') && <th>{colLbl('uom', 'U/M')}</th>}
                     <th className="r">{colLbl('rate', 'Rate')}</th>
                     <th className="r">{colLbl('amount', 'Amount')}</th>
@@ -495,6 +529,13 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                             <input value={l.description || ''} onChange={(e) => setLine(i, { description: e.target.value })} />
                           </td>
                         )}
+                        {colOn('pkg') && <td className="ro">{num(l.pkg) || num(it?.pkg) ? fq(num(l.pkg) || num(it?.pkg)) : ''}</td>}
+                        {colOn('ctn') && (
+                          <td>
+                            {it?.type === 'Discount' || !(num(l.pkg) || num(it?.pkg)) ? <input disabled /> : <QtyInput value={l.ctn ?? ''} onChange={(v) => setLine(i, { ctn: v })} />}
+                          </td>
+                        )}
+                        {colOn('pcs') && <td>{it?.type === 'Discount' ? <input disabled /> : <QtyInput value={l.pcs ?? ''} onChange={(v) => setLine(i, { pcs: v })} />}</td>}
                         <td className={short ? 'ro qtywarn' : ''} style={short ? { padding: 0 } : undefined}>
                           {it?.type === 'Discount' ? <input disabled /> : <QtyInput value={l.qty} onChange={(v) => setLine(i, { qty: v })} />}
                         </td>
@@ -536,6 +577,11 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
               </table>
             </div>
             <div className="line-tools">
+              {cartons && (
+                <span className="b" title="Total cartons · loose pieces · total quantity">
+                  Total: {fq(cartons.ctn)} Ctn · {fq(cartons.pcs)} Pcs · {fq(cartons.qty)} Qty
+                </span>
+              )}
               <span>Ctrl+Ins insert line · Ctrl+Del delete line · type in Item to search by name/SKU</span>
               {shortLines.length > 0 && (
                 <span className="badge err sp">
@@ -708,7 +754,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
             const line = sub.line;
             setTimeout(() => setF((x) => {
               const lines = [...x.lines];
-              lines[line] = { ...lineFor(it, x.customerId, num(lines[line]?.qty) || 1), key: lines[line]?.key || Math.random().toString(36).slice(2) };
+              lines[line] = { ...lineFor(it, x.customerId, lines[line]), key: lines[line]?.key || Math.random().toString(36).slice(2) };
               return { ...x, lines: ensureTrailing(lines, blankLine, isEmptyLine) };
             }), 0);
           }}
