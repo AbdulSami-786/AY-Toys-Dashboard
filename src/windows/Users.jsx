@@ -6,6 +6,8 @@ import { useStore } from '../store/store';
 import { Modal, useDialog } from '../components/ui';
 import { PAGE_GROUPS, PRESETS, ALL_PAGES, isAdmin } from '../lib/permissions';
 import { MIN_PASSWORD } from '../lib/password';
+import { randomString } from '../lib/format';
+import { copyText } from '../lib/clipboard';
 import { SHEET_READY } from '../config';
 
 const when = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—');
@@ -19,6 +21,7 @@ function UserEditor({ initial, onClose }) {
   const [f, setF] = useState(() => ({ ...blank(), ...(initial || {}) }));
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
+  const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState('');
@@ -35,6 +38,14 @@ function UserEditor({ initial, onClose }) {
     g.pages.forEach(([k]) => (on ? next.add(k) : next.delete(k)));
     setF((x) => ({ ...x, pages: ALL_PAGES.filter((p) => next.has(p)) }));
   };
+  // a strong password made here is shown, so the Super Admin can read it out or copy it once (passwords are never stored readable)
+  const generate = () => {
+    const p = randomString(10, 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789');
+    setPw(p);
+    setPw2(p);
+    setShowPw(true);
+  };
+  const copyPw = async () => dlg.toast((await copyText(pw)) ? 'Password copied' : 'Copying was blocked — select and copy it by hand', 'ok');
   const shops = f.shops === 'all' || !Array.isArray(f.shops) ? 'all' : f.shops;
   const admin = f.role === 'admin';
   const q = filter.trim().toLowerCase();
@@ -118,12 +129,26 @@ function UserEditor({ initial, onClose }) {
             </label>
             <label className="lf">
               {isNew ? 'Password *' : 'New password'}
-              <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder={isNew ? `at least ${MIN_PASSWORD} characters` : 'leave empty to keep the old one'} />
+              <input type={showPw ? 'text' : 'password'} value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" placeholder={isNew ? `at least ${MIN_PASSWORD} characters` : 'leave empty to keep the old one'} />
             </label>
             <label className="lf">
               Password again
-              <input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+              <input type={showPw ? 'text' : 'password'} value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
             </label>
+            <div className="flex" style={{ gap: 6, flexWrap: 'wrap', gridColumn: '1 / -1' }}>
+              <button type="button" className="btn sm" onClick={generate}>
+                Generate a strong password
+              </button>
+              <button type="button" className="btn sm" onClick={() => setShowPw((v) => !v)}>
+                {showPw ? 'Hide' : 'Show'}
+              </button>
+              {pw && (
+                <button type="button" className="btn sm" onClick={copyPw}>
+                  Copy
+                </button>
+              )}
+              <span className="muted small">Passwords are stored only as hashes, so an existing one cannot be read back — set a new one instead.</span>
+            </div>
           </div>
           <label className="lf">
             Notes
