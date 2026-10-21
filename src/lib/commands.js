@@ -189,6 +189,7 @@ export const MENUS = [
       '-',
       { label: 'Users & Permissions...', cmd: { open: 'users' } },
       { label: 'Change My Password...', cmd: { action: 'changePassword' } },
+      { label: 'Fingerprint...', cmd: { action: 'fingerprint' } },
       { label: 'Lock Screen', cmd: { action: 'lock' } },
       { label: 'Log Out', cmd: { action: 'logout' } },
       '-',

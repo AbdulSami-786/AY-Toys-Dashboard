@@ -1,7 +1,8 @@
 // Before the app: create the Super Admin (first run), log in, or unlock after a break.
 import { useState } from 'react';
-import { LogIn, Lock, Eye, EyeOff, ShieldCheck, RefreshCw, CloudOff } from 'lucide-react';
+import { LogIn, Lock, Eye, EyeOff, ShieldCheck, RefreshCw, CloudOff, Fingerprint } from 'lucide-react';
 import { useUsers } from '../store/users';
+import { useFingerprintSupport } from '../lib/fingerprint';
 import { SHEET_READY } from '../config';
 import { MIN_PASSWORD } from '../lib/password';
 
@@ -98,8 +99,25 @@ function Setup() {
   );
 }
 
+function FingerprintButton({ run, onError, label = 'Use fingerprint' }) {
+  const [busy, setBusy] = useState(false);
+  const go = async () => {
+    setBusy(true);
+    onError('');
+    const e = await run();
+    setBusy(false);
+    if (e) onError(e);
+  };
+  return (
+    <button type="button" className="btn login-btn" onClick={go} disabled={busy}>
+      <Fingerprint size={18} /> {busy ? 'Waiting for your fingerprint…' : label}
+    </button>
+  );
+}
+
 function Login() {
-  const { login } = useUsers();
+  const { login, anyFingerprint, loginWithFingerprint } = useUsers();
+  const fpOk = useFingerprintSupport();
   const [u, setU] = useState('');
   const [p, setP] = useState('');
   const [err, setErr] = useState('');
@@ -135,6 +153,7 @@ function Login() {
         <button className="btn primary login-btn" disabled={busy}>
           <LogIn size={16} /> {busy ? 'Checking…' : 'Log in'}
         </button>
+        {fpOk && anyFingerprint && <FingerprintButton run={loginWithFingerprint} onError={setErr} label="Log in with fingerprint" />}
         <p className="muted small">Forgot your password? Ask the Super Admin to set a new one.</p>
       </form>
     </Screen>
@@ -185,7 +204,8 @@ function NewPassword() {
 }
 
 function LockScreen() {
-  const { me, unlock, logout } = useUsers();
+  const { me, unlock, logout, myFingerprint, unlockWithFingerprint } = useUsers();
+  const fpOk = useFingerprintSupport();
   const [p, setP] = useState('');
   const [err, setErr] = useState('');
   const submit = async (e) => {
@@ -207,6 +227,7 @@ function LockScreen() {
         <PasswordInput value={p} onChange={setP} autoFocus />
         {err && <div className="note warn mt">{err}</div>}
         <button className="btn primary login-btn">Unlock</button>
+        {fpOk && myFingerprint && <FingerprintButton run={unlockWithFingerprint} onError={setErr} label="Unlock with fingerprint" />}
         <button type="button" className="btn ghost" onClick={logout}>
           Log in as someone else
         </button>

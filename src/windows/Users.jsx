@@ -1,7 +1,8 @@
 // Users & Permissions (Super Admin only): add users, set their password, and choose the shops and pages each may open.
 import { useMemo, useState } from 'react';
-import { UserCog, Plus, Pencil, Trash2, ShieldCheck, Cloud, CloudOff, Lock, Search } from 'lucide-react';
+import { UserCog, Plus, Pencil, Trash2, ShieldCheck, Cloud, CloudOff, Lock, Search, Fingerprint } from 'lucide-react';
 import { useUsers, usePerm } from '../store/users';
+import { useFingerprintSupport } from '../lib/fingerprint';
 import { useStore } from '../store/store';
 import { Modal, useDialog } from '../components/ui';
 import { PAGE_GROUPS, PRESETS, ALL_PAGES, isAdmin } from '../lib/permissions';
@@ -371,6 +372,73 @@ export default function UsersWindow() {
       </div>
       {edit && <UserEditor initial={edit.id ? edit : null} onClose={() => setEdit(null)} />}
     </div>
+  );
+}
+
+/** Any user: turn the fingerprint on or off for this computer. */
+export function FingerprintSetup({ onClose }) {
+  const { me, unlock, myFingerprint, enableFingerprint, disableFingerprint } = useUsers();
+  const supported = useFingerprintSupport();
+  const dlg = useDialog();
+  const [pw, setPw] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  const turnOn = async () => {
+    setErr('');
+    setBusy(true);
+    try {
+      // the password proves it is really this user before a finger is added to their account
+      const bad = await unlock(pw);
+      if (bad) return setErr('Your password is wrong.');
+      await enableFingerprint();
+      dlg.toast('Fingerprint is on for this computer');
+      onClose();
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const turnOff = () => {
+    disableFingerprint();
+    dlg.toast('Fingerprint is off');
+    onClose();
+  };
+  return (
+    <Modal
+      title="Fingerprint"
+      onClose={onClose}
+      width={440}
+      footer={
+        <>
+          <button className="btn" onClick={onClose}>
+            Close
+          </button>
+          {myFingerprint ? (
+            <button className="btn danger" onClick={turnOff}>
+              Turn fingerprint off
+            </button>
+          ) : (
+            <button className="btn primary" onClick={turnOn} disabled={busy || !supported || !pw}>
+              <Fingerprint size={14} /> {busy ? 'Waiting for your fingerprint…' : 'Turn fingerprint on'}
+            </button>
+          )}
+        </>
+      }
+    >
+      <p className="muted small" style={{ marginTop: 0 }}>
+        {me?.name}, use your fingerprint (or Windows Hello) to log in and to unlock the screen on <b>this computer</b>. Your fingerprint stays in the computer; AY Toys never sees it. Your password still works.
+      </p>
+      {!supported && <div className="note warn">This computer has no fingerprint reader or Windows Hello set up. Set it up in Windows Settings › Accounts › Sign-in options, then come back.</div>}
+      {supported && myFingerprint && <div className="note">Fingerprint is <b>on</b> for you on this computer. It stops working if your password changes — turn it on again then.</div>}
+      {supported && !myFingerprint && (
+        <label className="lf">
+          Your password (to confirm it is you)
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoFocus autoComplete="current-password" onKeyDown={(e) => e.key === 'Enter' && pw && !busy && turnOn()} />
+        </label>
+      )}
+      {err && <div className="note warn mt">{err}</div>}
+    </Modal>
   );
 }
 

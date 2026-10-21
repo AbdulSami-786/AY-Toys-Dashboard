@@ -11,7 +11,7 @@ import CustomizeShortcuts from './windows/CustomizeShortcuts';
 import { companyShortcuts, iconOf, sameCmd, shortcutForWindow } from './lib/shortcuts';
 import Companies from './windows/Companies';
 import { usePerm, useUsers } from './store/users';
-import { ChangePassword } from './windows/Users';
+import { ChangePassword, FingerprintSetup } from './windows/Users';
 import { pageKey } from './lib/permissions';
 import { downloadFile } from './lib/format';
 import { backupProblem } from './lib/importData';
@@ -83,6 +83,7 @@ function Shell() {
   const perm = usePerm();
   const usersApi = useUsers();
   const [pwOpen, setPwOpen] = useState(false);
+  const [fpOpen, setFpOpen] = useState(false);
   // may this user use a menu / shortcut command?
   const allowCmd = useCallback(
     (cmd) => {
@@ -230,6 +231,8 @@ function Shell() {
           return;
         case 'changePassword':
           return setPwOpen(true);
+        case 'fingerprint':
+          return setFpOpen(true);
         case 'lock':
           return usersApi.lock();
         case 'logout':
@@ -406,6 +409,7 @@ function Shell() {
               '-',
               ...(perm.admin ? [{ label: 'Users & Permissions…', onClick: () => open('users') }] : []),
               { label: 'Change My Password…', onClick: () => setPwOpen(true) },
+              { label: 'Fingerprint…', onClick: () => setFpOpen(true) },
               { label: 'Lock Screen', onClick: () => usersApi.lock() },
               { label: 'Log Out', onClick: () => usersApi.logout() },
             ])
@@ -567,6 +571,7 @@ function Shell() {
       <input ref={fileRef} type="file" accept=".json" hidden onChange={onRestore} />
       {ctx.node}
       {pwOpen && <ChangePassword onClose={() => setPwOpen(false)} />}
+      {fpOpen && <FingerprintSetup onClose={() => setFpOpen(false)} />}
       {scEdit && (
         <CustomizeShortcuts
           value={shortcuts}

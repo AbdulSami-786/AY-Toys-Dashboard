@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { sheets } from './sheets';
 import { SHEET, SHEET_READY } from '../config';
 import { hashPassword, passwordRecord, sameHash, PBKDF2_ROUNDS } from '../lib/password';
+import { fingerprintOf, enrollFingerprint, removeFingerprint, checkFingerprint } from '../lib/fingerprint';
 import { userCan, userCanShop, pageKey, isAdmin } from '../lib/permissions';
 import { uid } from '../lib/format';
 
@@ -241,6 +242,51 @@ export function UsersProvider({ children }) {
     [meId],
   );
 
+  // ---- fingerprint: a quicker way in on a computer where the user turned it on (see lib/fingerprint.js)
+  const [fpVer, setFpVer] = useState(0);
+  const myFingerprint = useMemo(() => fingerprintOf(me), [me, fpVer]); // eslint-disable-line react-hooks/exhaustive-deps
+  const anyFingerprint = useMemo(() => live.some((u) => u.active !== false && fingerprintOf(u)), [live, fpVer]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const enableFingerprint = useCallback(async () => {
+    const u = usersRef.current.find((x) => x.id === meId);
+    if (!u) throw new Error('Please log in again.');
+    await enrollFingerprint(u);
+    setFpVer((n) => n + 1);
+  }, [meId]);
+
+  const disableFingerprint = useCallback(() => {
+    removeFingerprint(meId);
+    setFpVer((n) => n + 1);
+  }, [meId]);
+
+  /** → '' when logged in, else the reason */
+  const loginWithFingerprint = useCallback(async () => {
+    const records = usersRef.current.filter((x) => !x.deleted && x.active !== false).map(fingerprintOf).filter(Boolean);
+    try {
+      const rec = await checkFingerprint(records);
+      const u = usersRef.current.find((x) => x.id === rec.userId);
+      if (!u || u.active === false || u.mustChange) return 'Log in with your password.';
+      session.set(u.id);
+      setMeId(u.id);
+      setLocked(false);
+      saveUser({ ...u, lastLogin: new Date().toISOString() }).catch(() => {});
+      return '';
+    } catch (e) {
+      return e.message;
+    }
+  }, [saveUser]);
+
+  const unlockWithFingerprint = useCallback(async () => {
+    const u = usersRef.current.find((x) => x.id === meId);
+    try {
+      await checkFingerprint([fingerprintOf(u)].filter(Boolean));
+      setLocked(false);
+      return '';
+    } catch (e) {
+      return e.message;
+    }
+  }, [meId]);
+
   const logout = useCallback(() => {
     session.set('');
     setMeId('');
@@ -280,8 +326,8 @@ export function UsersProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ users: live, me, hasAdmin, remote, refresh, saveUser, deleteUser, login, logout, locked, lock: () => setLocked(true), unlock, lockAfter, setLockAfter, perm, pending: pendingRef.current.size }),
-    [live, me, hasAdmin, remote, refresh, saveUser, deleteUser, login, logout, locked, unlock, lockAfter, setLockAfter, perm],
+    () => ({ users: live, me, hasAdmin, remote, refresh, saveUser, deleteUser, login, logout, locked, lock: () => setLocked(true), unlock, lockAfter, setLockAfter, perm, pending: pendingRef.current.size, myFingerprint, anyFingerprint, enableFingerprint, disableFingerprint, loginWithFingerprint, unlockWithFingerprint }),
+    [live, me, hasAdmin, remote, refresh, saveUser, deleteUser, login, logout, locked, unlock, lockAfter, setLockAfter, perm, myFingerprint, anyFingerprint, enableFingerprint, disableFingerprint, loginWithFingerprint, unlockWithFingerprint],
   );
   return <UsersCtx.Provider value={value}>{children}</UsersCtx.Provider>;
 }
