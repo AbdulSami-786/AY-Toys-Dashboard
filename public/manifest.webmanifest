@@ -1,0 +1,11 @@
+{
+  "name": "AY Toys — Wholesale Accounting",
+  "short_name": "AY Toys",
+  "description": "QuickBooks-style books for toy wholesale. Works offline; syncs with Google Sheets.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#e9edf1",
+  "theme_color": "#2ca01c",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

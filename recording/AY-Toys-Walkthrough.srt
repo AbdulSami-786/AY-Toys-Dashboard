@@ -1,0 +1,443 @@
+1
+00:00:01,080 --> 00:00:06,080
+AY Toys — Wholesale Accounting: full walkthrough
+Har feature step-by-step
+
+2
+00:00:06,080 --> 00:00:10,000
+Add Company & Theme — Create a company and give it its own colour theme.
+Company add karein aur har company ka alag theme rang set karein.
+
+3
+00:00:10,000 --> 00:00:14,960
+This is the Company List — the first screen when AY Toys opens.
+App khulte hi Company List aati hai.
+
+4
+00:00:14,960 --> 00:00:24,200
+Click "Add Company". Type the company name and contact details.
+"Add Company" par click karein, naam aur details likhein.
+
+5
+00:00:24,200 --> 00:00:30,160
+Pick a theme colour for this company — here we choose Ruby Red for XYZ Toys.
+Is company ka theme rang chunein — XYZ Toys ke liye laal (red).
+
+6
+00:00:30,160 --> 00:00:38,200
+The preview shows how the app will look. You can also pick any custom colour or Dark mode.
+Preview mein dekh lein. Custom color aur Dark mode bhi mojood hai.
+
+7
+00:00:38,200 --> 00:00:46,280
+For this demo we tick "Load sample data" so we have customers, items, invoices and bills to work with.
+Demo ke liye sample data load kar rahe hain.
+
+8
+00:00:46,280 --> 00:00:49,200
+The whole interface is now red — the XYZ Toys theme.
+Ab poora app laal rang mein hai — XYZ Toys ka theme.
+
+9
+00:00:49,200 --> 00:00:53,040
+Home Page & Insights — The QuickBooks-style workflow home page and the business dashboard.
+Home page aur Insights dashboard.
+
+10
+00:00:53,040 --> 00:01:02,240
+The Home Page shows the QuickBooks workflow: Vendors, Customers, Company and Banking. Click any icon to open that task.
+Home page par Vendors, Customers, Company aur Banking ka flow hai. Kisi bhi icon par click karein.
+
+11
+00:01:02,240 --> 00:01:12,360
+On the right: bank balances and Reminders — overdue invoices, bills due, low stock, purchase orders to receive.
+Right side par bank balance aur reminders: overdue invoices, bills, low stock.
+
+12
+00:01:12,360 --> 00:01:21,320
+Insights: income, net income, what customers owe you and what you owe vendors — plus a 12-month income vs expenses chart.
+Insights mein income, profit, receivable aur payable ek nazar mein.
+
+13
+00:01:21,320 --> 00:01:29,640
+Top customers and best-selling items. Click any bar or tile to open the report behind it.
+Top customers aur best-selling items. Kisi bhi cheez par click karke report kholen.
+
+14
+00:01:29,640 --> 00:01:35,360
+Chart of Accounts — All your accounts with balances — press Ctrl+A.
+Chart of Accounts — Ctrl+A dabayein.
+
+15
+00:01:35,360 --> 00:01:45,720
+Accounts are grouped by QuickBooks type: Bank, Receivable, Inventory, Payable, Equity, Income, Cost of Goods Sold and Expenses.
+Har account apni type ke sath: Bank, Receivable, Inventory, Payable, Income, Expense.
+
+16
+00:01:45,720 --> 00:01:55,560
+Use the arrow keys to move. Press Ctrl+N (or Insert) to add a new account.
+Arrow keys se move karein. Naya account: Ctrl+N ya Insert.
+
+17
+00:01:55,560 --> 00:02:03,040
+We add an Expense account "Warehouse Security". You can also make it a sub-account of another account.
+Expense account "Warehouse Security" bana rahe hain.
+
+18
+00:02:03,040 --> 00:02:11,400
+Double-click a bank account to open its register, or press Ctrl+Q for a QuickReport of the selected account.
+Bank account par double-click = register. Ctrl+Q = QuickReport.
+
+19
+00:02:11,400 --> 00:02:19,320
+The register shows every payment and deposit with a running balance — just like QuickBooks.
+Register mein har payment aur deposit running balance ke sath.
+
+20
+00:02:19,320 --> 00:02:25,160
+Add Inventory — The Item List and adding a new stock item with opening quantity.
+Item List aur naya stock item opening quantity ke sath.
+
+21
+00:02:25,160 --> 00:02:32,840
+The Item List shows quantity on hand, on sales order, on purchase order, average cost, price and stock value.
+Item List mein on-hand qty, average cost, price aur stock value.
+
+22
+00:02:32,840 --> 00:02:39,800
+Items below their reorder point are shown in red with a warning.
+Reorder point se kam stock wale items laal mein dikhte hain.
+
+23
+00:02:39,800 --> 00:02:55,640
+New Item: choose the type "Inventory Part", then the name, SKU, category and unit.
+New Item: type "Inventory Part", naam, SKU, category aur unit.
+
+24
+00:02:55,640 --> 00:03:07,960
+Purchase cost and sales price — AY Toys shows the markup and margin for you.
+Purchase cost aur sale price — markup aur margin khud nikal aata hai.
+
+25
+00:03:07,960 --> 00:03:18,360
+Set a reorder point and the opening quantity you already have in the warehouse.
+Reorder point aur warehouse mein mojood opening quantity likhein.
+
+26
+00:03:18,360 --> 00:03:25,600
+The new item is in the list with 200 pcs on hand at Rs 250 average cost.
+Naya item 200 pcs ke sath list mein aa gaya.
+
+27
+00:03:25,600 --> 00:03:31,520
+Customer Center — Add customers with terms, price level and credit limit.
+Customer add karein — terms, price level aur credit limit.
+
+28
+00:03:31,520 --> 00:03:39,120
+Customer Center: the list with balances on the left, details and every transaction on the right.
+Left par customers aur balance, right par details aur transactions.
+
+29
+00:03:39,120 --> 00:03:56,560
+Statuses show what is Paid, Open or Overdue. Double-click a transaction to open it.
+Paid, Open, Overdue status. Double-click se transaction khulti hai.
+
+30
+00:03:56,560 --> 00:04:05,600
+Enter the customer details. Then open "Payment Settings".
+Customer ki details likhein, phir "Payment Settings" kholen.
+
+31
+00:04:05,600 --> 00:04:17,120
+Price level "Wholesale (-10%)" means this customer automatically gets 10% off the base price on every invoice.
+Price level "Wholesale -10%": har invoice par khud 10% kam rate lagega.
+
+32
+00:04:17,120 --> 00:04:23,080
+Create Invoice — Make an invoice using only the keyboard — Ctrl+I.
+Invoice banayein — Ctrl+I, sirf keyboard se.
+
+33
+00:04:23,080 --> 00:04:32,240
+Type part of the customer name and press Enter. Bill-to, terms, due date and rep fill in automatically.
+Customer ka naam likh kar Enter. Address, terms aur due date khud aa jate hain.
+
+34
+00:04:32,240 --> 00:04:43,000
+In the Item column type a few letters — the list searches by name or SKU and shows stock on hand.
+Item column mein naam ya SKU likhein — stock bhi saath dikhta hai.
+
+35
+00:04:43,000 --> 00:04:55,320
+Rate is 405 — the base price 450 minus the Wholesale 10%. The side panel shows stock, last price and margin.
+Rate 405 hai — 450 mein se 10% wholesale discount. Side panel mein stock aur margin.
+
+36
+00:04:55,320 --> 00:05:00,640
+Amount fields work like a calculator — type 2*12 and press Tab.
+Amount fields calculator ki tarah — 2*12 likh kar Tab.
+
+37
+00:05:00,640 --> 00:05:08,760
+Totals update instantly. Now press Alt+S to Save & New (or Alt+A to Save & Close).
+Total foran update. Alt+S = Save & New, Alt+A = Save & Close.
+
+38
+00:05:08,760 --> 00:05:15,680
+Saved! The form is ready for the next invoice. Alt+P goes back to the previous one.
+Save ho gayi! Alt+P se pichli invoice wapas.
+
+39
+00:05:15,680 --> 00:05:26,880
+Ctrl+Y shows the transaction journal — the debits and credits behind this invoice, including Cost of Goods Sold.
+Ctrl+Y: is invoice ka journal — debit aur credit, COGS ke sath.
+
+40
+00:05:26,880 --> 00:05:35,200
+Use Print for a printable invoice, Memorize (Ctrl+M) for repeat orders, and History (Ctrl+H) for linked payments.
+Print, Memorize (Ctrl+M) aur History (Ctrl+H) bhi yahin hain.
+
+41
+00:05:35,200 --> 00:05:41,400
+Receive Payments — Record money received and apply it to invoices.
+Customer se aayi payment record karein.
+
+42
+00:05:41,400 --> 00:05:46,600
+Clicking "Receive Pmt" opens Receive Payments with this customer and invoice already selected.
+"Receive Pmt" se payment window customer aur invoice ke sath khulti hai.
+
+43
+00:05:46,600 --> 00:06:05,440
+Let’s say Joy Toys paid Rs 30,000 now. Type the amount — it is auto-applied to the oldest invoice.
+Joy Toys ne 30,000 diye. Amount likhein — khud oldest invoice par lag jata hai.
+
+44
+00:06:05,440 --> 00:06:09,480
+The invoice now shows the payment applied and the remaining balance due.
+Invoice par payment aur baqi balance nazar aata hai.
+
+45
+00:06:09,480 --> 00:06:15,320
+Purchase Order → Receive → Bill — Order stock from a vendor, receive it and create the bill.
+Vendor se maal order karein, receive karein aur bill banayein.
+
+46
+00:06:15,320 --> 00:06:30,440
+Teddy Bears are low on stock. We create a Purchase Order to Karachi Plastic Works.
+Teddy Bear ka stock kam hai — Purchase Order bana rahe hain.
+
+47
+00:06:30,440 --> 00:06:34,480
+Ordered quantities show as "On P.O." in the Item List until they arrive.
+Order ki hui qty Item List mein "On P.O." dikhti hai.
+
+48
+00:06:34,480 --> 00:06:41,440
+When the goods arrive, click "Receive & Bill" — the bill is created from the PO.
+Maal aane par "Receive & Bill" — PO se bill khud ban jata hai.
+
+49
+00:06:41,440 --> 00:06:53,160
+The Items tab is filled from the PO. Saving adds 100 bears to stock and updates the average cost.
+Items tab PO se bhar gaya. Save par stock aur average cost update.
+
+50
+00:06:53,160 --> 00:06:59,000
+Add Bill & Pay Bills — Enter an expense bill from a vendor and pay bills.
+Vendor ka expense bill aur bills ki payment.
+
+51
+00:06:59,000 --> 00:07:08,840
+Enter Bills: choose the vendor. Terms and due date come from the vendor.
+Enter Bills: vendor chunein — terms aur due date khud aate hain.
+
+52
+00:07:08,840 --> 00:07:26,040
+On the Expenses tab choose the expense account and amount — here the electricity bill under Utilities.
+Expenses tab mein account aur amount — bijli ka bill "Utilities".
+
+53
+00:07:26,040 --> 00:07:34,040
+Pay Bills lists every unpaid bill with its due date. Overdue ones are red.
+Pay Bills mein saare unpaid bills — overdue laal.
+
+54
+00:07:34,040 --> 00:07:42,320
+Tick the bills to pay, choose the bank account, and click "Pay Selected Bills".
+Bills tick karein, bank account chunein, "Pay Selected Bills".
+
+55
+00:07:42,320 --> 00:07:48,160
+Sales Receipt, Deposit & Checks — Cash sales, bank deposits, write checks and adjust stock.
+Cash sale, bank deposit, checks aur stock adjustment.
+
+56
+00:07:48,160 --> 00:08:05,760
+A Sales Receipt is a cash sale — paid on the spot. The money waits in Undeposited Funds.
+Sales Receipt = cash sale. Paisa "Undeposited Funds" mein jata hai.
+
+57
+00:08:05,760 --> 00:08:17,000
+Make Deposits: select the payments you are taking to the bank and save.
+Make Deposits: jo payments bank le ja rahe hain unhe select karein.
+
+58
+00:08:17,000 --> 00:08:37,120
+Write Checks (Alt+K — the browser reserves Ctrl+W): pay expenses straight from the bank, like warehouse rent.
+Write Checks (Alt+K): seedha bank se kharcha — jaise kiraya.
+
+59
+00:08:37,120 --> 00:08:52,280
+Adjust Quantity on Hand: record damaged or missing stock. The value goes to Inventory Shrinkage.
+Toota hua ya kam stock adjust karein — "Inventory Shrinkage" mein jata hai.
+
+60
+00:08:52,280 --> 00:08:58,640
+Reports — Customer & vendor balances, Profit & Loss, Balance Sheet and more.
+Customer/Vendor balance, Profit & Loss, Balance Sheet aur bohat se reports.
+
+61
+00:08:58,640 --> 00:09:02,720
+Customer Balance Summary: how much every customer owes you right now.
+Customer Balance Summary: har customer ka baqaya.
+
+62
+00:09:02,720 --> 00:09:07,960
+Double-click any line to QuickZoom into the details.
+Kisi bhi line par double-click — detail khul jati hai.
+
+63
+00:09:07,960 --> 00:09:15,600
+Customer Balance Detail: every invoice and payment with a running balance.
+Customer Balance Detail: har invoice aur payment running balance ke sath.
+
+64
+00:09:15,600 --> 00:09:21,560
+Vendor Balance Summary: how much you owe each vendor.
+Vendor Balance Summary: aap ne kis vendor ko kitna dena hai.
+
+65
+00:09:21,560 --> 00:09:28,600
+Profit & Loss (Income Statement): Income, Cost of Goods Sold, Gross Profit, Expenses and Net Income.
+Profit & Loss: income, COGS, gross profit, expenses aur net income.
+
+66
+00:09:28,600 --> 00:09:36,800
+Change the date range from the Dates list: This Month, Last Quarter, This Fiscal Year and more.
+Dates list se date range badlein — This Month, Last Quarter waghera.
+
+67
+00:09:36,800 --> 00:09:47,320
+Double-click an amount — here Sales — to see every transaction behind it.
+Kisi amount par double-click — us ke peeche ki transactions.
+
+68
+00:09:47,320 --> 00:09:56,880
+Balance Sheet: Assets = Liabilities + Equity. Net Income for the year is included in Equity.
+Balance Sheet: Assets = Liabilities + Equity.
+
+69
+00:09:56,880 --> 00:10:07,280
+Every report can be printed, exported to Excel and memorized with its settings.
+Har report Print, Excel export aur Memorize ho sakti hai.
+
+70
+00:10:07,280 --> 00:10:19,080
+Report Center: 50+ reports grouped like QuickBooks — aging, sales by item, inventory valuation, trial balance…
+Report Center: 50 se zyada reports — aging, sales by item, inventory waghera.
+
+71
+00:10:19,080 --> 00:10:23,960
+Stock Status shows what to reorder and a suggested quantity for each item.
+Stock Status: kya reorder karna hai aur kitna.
+
+72
+00:10:23,960 --> 00:10:30,160
+Keyboard Shortcuts & Find — QuickBooks shortcut keys, menus and search.
+QuickBooks shortcut keys, menus aur search.
+
+73
+00:10:30,160 --> 00:10:38,840
+Press F1 any time for the full shortcut list: Ctrl+I invoice, Ctrl+J customers, Ctrl+A accounts, Alt+S save…
+F1 dabayein — saari shortcut keys ki list.
+
+74
+00:10:38,840 --> 00:10:51,480
+Date fields have QuickBooks keys too: T = today, + / - = next / previous day, M = month start, H = month end.
+Date field mein: T = aaj, + / - = agla/pichla din, M = mahine ka shuru.
+
+75
+00:10:51,480 --> 00:11:00,760
+Alt + the underlined letter opens a menu (Alt+F, Alt+C, Alt+U, Alt+R…). Use the arrow keys and Enter.
+Alt + underline letter se menu khulta hai. Arrow keys aur Enter.
+
+76
+00:11:00,760 --> 00:11:10,880
+Find (Ctrl+F) searches every transaction by number, name, memo, item or amount.
+Find (Ctrl+F): number, naam, memo ya amount se kuch bhi dhoondhein.
+
+77
+00:11:10,880 --> 00:11:16,800
+Multiple Companies — Add a second company with a different theme and switch between them.
+Doosri company alag theme ke sath, aur dono mein switch.
+
+78
+00:11:16,800 --> 00:11:39,920
+Ctrl+O opens the Company List. Add a second company — ABC Toys — with the green theme.
+Ctrl+O: Company List. Doosri company ABC Toys hara (green) theme ke sath.
+
+79
+00:11:39,920 --> 00:11:45,640
+ABC Toys opens in green with its own empty books — separate customers, items and reports.
+ABC Toys green mein, apne alag books ke sath.
+
+80
+00:11:45,640 --> 00:11:53,440
+Use "Quick switch" in the title bar to jump between companies. Each one keeps its own colour.
+Title bar mein "Quick switch" se company badlein — har ek ka apna rang.
+
+81
+00:11:53,440 --> 00:11:59,280
+Back in XYZ Toys — red again.
+Wapas XYZ Toys — phir se laal.
+
+82
+00:11:59,280 --> 00:12:09,360
+You can change a company theme any time: Company › Theme & Appearance. Changes apply instantly.
+Theme kabhi bhi badlein: Company › Theme & Appearance.
+
+83
+00:12:09,360 --> 00:12:17,600
+Purple and Dark mode… and back to Ruby Red, light.
+Purple aur Dark mode… phir wapas laal.
+
+84
+00:12:17,600 --> 00:12:23,840
+Google Sheets & Backup — Connect the Google Sheet database and back up your data.
+Google Sheet database connect karein aur backup lein.
+
+85
+00:12:23,840 --> 00:12:34,280
+Right now data is saved on this computer ("Local only"). Paste your Apps Script Web App URL here to sync to Google Sheets.
+Abhi data isi computer par hai. Apps Script URL paste karein — Google Sheet se sync.
+
+86
+00:12:34,280 --> 00:12:45,160
+Setup Guide: create a Google Sheet, open Extensions › Apps Script, paste this code, deploy as a Web app for "Anyone".
+Google Sheet banayein, Extensions › Apps Script, ye code paste karein, Web app deploy.
+
+87
+00:12:45,160 --> 00:12:51,520
+Each company gets its own tabs in the sheet. Changes upload in the background and retry automatically when offline.
+Har company ke alag tabs. Internet na ho to baad mein khud upload.
+
+88
+00:12:51,520 --> 00:13:01,040
+File › Back Up Company downloads a full backup file; File › Restore Backup brings it back.
+File › Back Up se poora backup download; Restore se wapas.
+
+89
+00:13:01,040 --> 00:13:06,000
+AY Toys is ready — press F1 in the app for all shortcut keys.
