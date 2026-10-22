@@ -24,7 +24,10 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const totalLabelAt = Math.max(0, cols.findIndex((c) => QTY_KEYS.includes(c.key)) - 1);
   const framed = st.borders === 'grid' || st.borders === 'columns';
 
-  const cell = (l, key) => (key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
+  // carton invoices show the quantities once, on the Total row, not on every item
+  const totalRow = !!ctx.lineTotals && cols.some((c) => c.key === 'ctn' || c.key === 'pcs');
+
+  const cell = (l, key) => (totalRow && QTY_KEYS.includes(key) ? '' : key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
 
   return (
     <div
@@ -58,7 +61,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
                 ))}
               </tr>
             ))}
-            {ctx.lineTotals && cols.some((c) => c.key === 'ctn' || c.key === 'pcs') && (
+            {totalRow && (
               <tr className="tdoc-total">
                 {cols.map((c, i) => (
                   <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>

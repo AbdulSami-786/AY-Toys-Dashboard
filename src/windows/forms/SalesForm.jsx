@@ -6,6 +6,7 @@ import { useOptions, listOpts } from '../../store/options';
 import { useDialog } from '../../components/ui';
 import { usePrint, TxnPrint } from '../../components/print';
 import Combo from '../../components/Combo';
+import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
 import { StdRibbon, FormActions, useTxnController, blankLine, ensureTrailing, SideCard, TB, TemplatePicker } from './common';
 import { useFormTemplate } from '../../store/templates';
@@ -236,6 +237,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     });
 
   const gridKeys = (e) => {
+    gridArrowNav(e);
     if (e.ctrlKey && e.key === 'Insert') {
       e.preventDefault();
       setF((x) => {
@@ -309,7 +311,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     makeNew,
     build,
     beforeSave,
-    printNode: () => saved && print(<TxnPrint txn={{ ...saved, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
+    printNode: (txn) => print(<TxnPrint txn={{ ...txn, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
   });
 
   useEffect(() => {
@@ -473,7 +475,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
               )}
             </div>
 
-            <div className="lines" onKeyDown={gridKeys}>
+            <div className="lines" data-gridnav onKeyDown={gridKeys}>
               <table>
                 <colgroup>
                   <col style={{ width: 34 }} />
@@ -582,7 +584,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                   Total: {fq(cartons.ctn)} Ctn · {fq(cartons.pcs)} Pcs · {fq(cartons.qty)} Qty
                 </span>
               )}
-              <span>Ctrl+Ins insert line · Ctrl+Del delete line · type in Item to search by name/SKU</span>
+              <span>Arrow keys move between cells · Ctrl+Ins insert line · Ctrl+Del delete line · type in Item to search by name/SKU</span>
               {shortLines.length > 0 && (
                 <span className="badge err sp">
                   <AlertTriangle size={11} /> Not enough stock for {new Set(shortLines.map((l) => l.itemId)).size} item(s)

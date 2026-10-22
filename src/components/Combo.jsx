@@ -125,7 +125,8 @@ export default function Combo({
       return;
     }
     if (!open) {
-      if (e.key === 'ArrowDown') {
+      // inside a line-item grid (data-gridnav) a closed ↓ moves to the next line instead; Alt+↓ / F4 still open the list
+      if (e.key === 'ArrowDown' && !e.target.closest('[data-gridnav]')) {
         e.preventDefault();
         openList();
       }

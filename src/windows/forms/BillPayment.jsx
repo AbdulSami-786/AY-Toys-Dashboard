@@ -47,7 +47,7 @@ export default function BillPayment({ txnId, winId }) {
     return { ...rest, amount, total: amount, applied: Object.entries(appliedMap).filter(([, v]) => num(v) > 0).map(([txnId, v]) => ({ txnId, amount: round2(num(v)) })) };
   };
   const saved = data.txns.find((t) => t.id === f.id);
-  const ctl = useTxnController({ winId, type: 'billpayment', txnId, f, setF, makeNew, build, printNode: () => saved && print(<TxnPrint txn={{ ...saved, templateId: f.templateId }} company={company} L={L} ledger={ledger} />) });
+  const ctl = useTxnController({ winId, type: 'billpayment', txnId, f, setF, makeNew, build, printNode: (txn) => print(<TxnPrint txn={{ ...txn, templateId: f.templateId }} company={company} L={L} ledger={ledger} />) });
 
   if (!f.id)
     return (

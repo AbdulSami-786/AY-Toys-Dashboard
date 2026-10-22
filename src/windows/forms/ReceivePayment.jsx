@@ -170,7 +170,7 @@ export default function ReceivePayment({ txnId, prefill, winId }) {
     makeNew,
     build,
     beforeSave,
-    printNode: () => saved && print(<TxnPrint txn={{ ...saved, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
+    printNode: (txn) => print(<TxnPrint txn={{ ...txn, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
   });
 
   const toggle = (r) =>

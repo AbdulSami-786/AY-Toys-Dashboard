@@ -6,6 +6,7 @@ import { useOptions, listOpts } from '../../store/options';
 import { useDialog, Tabs } from '../../components/ui';
 import { usePrint, TxnPrint } from '../../components/print';
 import Combo from '../../components/Combo';
+import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
 import { StdRibbon, FormActions, useTxnController, ensureTrailing, SideCard, TB, TemplatePicker } from './common';
 import { useFormTemplate } from '../../store/templates';
@@ -217,7 +218,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
     makeNew,
     build,
     beforeSave,
-    printNode: () => saved && print(<TxnPrint txn={{ ...saved, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
+    printNode: (txn) => print(<TxnPrint txn={{ ...txn, templateId: f.templateId }} company={company} L={L} ledger={ledger} />),
   });
 
   const openPOs = useMemo(
@@ -258,7 +259,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
   const expenseAccOpts = O.accountOpts(null).filter((o) => !['Accounts Receivable', 'Accounts Payable'].includes(o.sub));
 
   const expenseGrid = (
-    <div className="lines">
+    <div className="lines" data-gridnav onKeyDown={gridArrowNav}>
       <table>
         <colgroup>
           <col style={{ width: 280 }} />
@@ -306,7 +307,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
   );
 
   const itemGrid = (
-    <div className="lines">
+    <div className="lines" data-gridnav onKeyDown={gridArrowNav}>
       <table>
         <colgroup>
           <col style={{ width: colOn('desc') ? 210 : undefined }} />

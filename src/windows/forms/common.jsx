@@ -93,7 +93,7 @@ export function StdRibbon({ seq, onNav, onNew, onSave, onDelete, onVoid, onCopy,
             {onMemorize && <TB icon={Bookmark} label="Memorize" title="Memorize (Ctrl+M)" onClick={onMemorize} />}
             <TBSep />
             {formatting && <TB icon={Eye} label="Preview" title="Print preview" onClick={formatting.onPreview} />}
-            {onPrint && <TB icon={Printer} label="Print" title="Print (Ctrl+P)" onClick={onPrint} disabled={isNew} />}
+            {onPrint && <TB icon={Printer} label="Print" title="Print (Ctrl+P)" onClick={onPrint} />}
             {extra}
           </>
         ) : tabs[tab] === 'Formatting' ? (
@@ -414,7 +414,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     'ctrl+m': () => setModal({ kind: 'memorize' }),
     'ctrl+y': () => !isNew && setModal({ kind: 'journal' }),
     'ctrl+h': () => !isNew && nav.report('history', { txnId: f.id }),
-    'ctrl+p': () => printNode && !isNew && printNode(),
+    'ctrl+p': () => printNode && printNode(previewSource()),
     esc: async () => (await guard()) && close(winId),
   };
   useWindowKeys(keys);
@@ -452,7 +452,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     onVoid: toggleVoid,
     onCopy: copy,
     onMemorize: () => setModal({ kind: 'memorize' }),
-    onPrint: printNode ? () => printNode() : undefined,
+    onPrint: printNode ? () => printNode(previewSource()) : undefined,
     onHistory: () => nav.report('history', { txnId: f.id }),
     onJournal: () => setModal({ kind: 'journal' }),
     onFind: () => nav.open('find', { type, n: Date.now() }),
