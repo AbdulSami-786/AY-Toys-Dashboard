@@ -20,6 +20,8 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const flow = !design && W < 100;
   // 58 mm paper has room for item, quantity and amount only (the rate is on the line total anyway)
   const tiny = flow && W < 70;
+  // thermal paper prints thin and light, so receipt text is set larger and bold (see .tdoc.roll)
+  const boost = flow ? (tiny ? 1.12 : 1.22) : 1;
   const cols = tpl.columns.filter((c) => c.print && !(tiny && c.key === 'rate'));
   const colW = (c) => (tiny ? { item: 40, desc: 40, qty: 22, amount: 38 }[c.key] ?? num(c.width) : num(c.width));
   const totalW = cols.reduce((s, c) => s + Math.max(1, colW(c)), 0) || 1;
@@ -37,10 +39,10 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
 
   return (
     <div
-      className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '')}
-      style={{ width: W + 'mm', fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) + 'pt', '--acc': accent }}
+      className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '') + (flow ? ' roll' : '')}
+      style={{ width: W + 'mm', fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
     >
-      <Band band="header" height={tpl.headerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} />
+      <Band band="header" height={tpl.headerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       <div className="tdoc-body" style={{ minHeight: bodyMin ? bodyMin + 'mm' : undefined }}>
         <table className={`tdoc-lines b-${st.borders} h-${st.tableHeader}${st.zebra ? ' zebra' : ''}${tiny ? ' tiny' : ''}`}>
           <colgroup>
@@ -85,7 +87,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
             )}
           </tbody>
         </table>
-        {framed && (
+        {framed && !flow && (
           <div className="tdoc-frame" aria-hidden="true">
             {cols.map((c) => (
               <span key={c.key} style={{ width: pct(c) }} />
@@ -94,7 +96,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
         )}
         {design && <div className="band-tag body">Line items · columns are set in Data Layout › Columns</div>}
       </div>
-      <Band band="footer" height={tpl.footerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} />
+      <Band band="footer" height={tpl.footerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       {st.stamps && ctx.stamp && <div className={'tdoc-stamp ' + ctx.stamp.toLowerCase()}>{ctx.stamp}</div>}
     </div>
   );
@@ -116,7 +118,7 @@ function flowRows(boxes) {
   return rows;
 }
 
-function Band({ band, height, tpl, ctx, design, accent, flow = 0 }) {
+function Band({ band, height, tpl, ctx, design, accent, flow = 0, boost = 1 }) {
   const boxes = tpl.boxes.filter((b) => b.band === band && !b.hidden);
   if (flow) {
     const rows = flowRows(boxes);
@@ -129,7 +131,7 @@ function Band({ band, height, tpl, ctx, design, accent, flow = 0 }) {
               {r.boxes.map((b) => {
                 const ml = Math.max(0, b.x - right);
                 right = b.x + b.w;
-                return <Box key={b.id} b={b} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={{ W: flow, ml }} />;
+                return <Box key={b.id} b={b} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={{ W: flow, ml }} boost={boost} />;
               })}
             </div>
           );
@@ -152,13 +154,13 @@ function Band({ band, height, tpl, ctx, design, accent, flow = 0 }) {
   );
 }
 
-function Box({ b, tpl, ctx, design, accent, flow }) {
+function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
   const v = ctx.values;
   const sel = design?.selectedId === b.id;
   const color = b.color === 'accent' ? accent : b.color || undefined;
   const bg = b.bg === 'accent' ? accent : b.bg || undefined;
   const base = num(tpl.style.fontSize || 9);
-  const size = b.size ? num(b.size) : base;
+  const size = (b.size ? num(b.size) : base) * boost;
 
   let label = null;
   let body = null;

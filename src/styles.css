@@ -2740,6 +2740,55 @@ table.tdoc-lines {
   white-space: nowrap;
   overflow-wrap: normal;
 }
+/* receipt rolls (thermal paper): larger, bold, pure black so every character prints dark and sharp */
+.tdoc.roll {
+  color: #000;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.tdoc.roll .tb-label {
+  color: #000;
+  font-size: 0.82em;
+}
+.tdoc.roll .tdoc-lines th {
+  color: #000;
+  font-weight: 800;
+  border-top: 0.35mm solid #000;
+  border-bottom: 0.35mm solid #000;
+  background: none;
+}
+.tdoc.roll .tdoc-lines td {
+  border-bottom: 0.25mm dashed #000;
+  padding-top: 1.1mm;
+  padding-bottom: 1.1mm;
+}
+/* numbers never wrap or spill: the item column takes whatever width is left and wraps instead */
+.tdoc.roll table.tdoc-lines {
+  table-layout: auto;
+}
+.tdoc.roll .tdoc-lines th,
+.tdoc.roll .tdoc-lines td.n,
+.tdoc.roll .tdoc-lines td.q {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+.tdoc.roll .tdoc-lines tr.tdoc-total td {
+  border-top: 0.35mm solid #000;
+  font-weight: 800;
+}
+.tdoc.roll .tb-totals .tt.strong {
+  font-weight: 800;
+  border-top: 0.4mm solid #000;
+}
+.tdoc.roll .tb-sign,
+.tdoc.roll .tb-line {
+  border-top-color: #000;
+}
+.tdoc.roll .tbox.bd-box,
+.tdoc.roll .tbox.bd-bottom,
+.tdoc.roll .tbox.bd-top {
+  border-color: #000;
+}
 .tdoc-nolines {
   height: 8mm;
 }

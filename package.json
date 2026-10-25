@@ -2,7 +2,7 @@
   "name": "ay-toys-dashboard",
   "productName": "AY Toys",
   "private": true,
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "AY Toys — QuickBooks-style wholesale accounting. Works offline, syncs with Google Sheets.",
   "author": "AY Toys",
   "type": "module",
