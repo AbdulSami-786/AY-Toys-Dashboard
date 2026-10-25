@@ -35,6 +35,7 @@ export const PAPERS = {
   Legal: { label: 'Legal (8.5 × 14 in)', w: 215.9, h: 355.6 },
   A5: { label: 'A5 (148 × 210 mm)', w: 148, h: 210 },
   R80: { label: 'Receipt roll 80 mm', w: 80, h: 297 },
+  R58: { label: 'Receipt roll 58 mm (mini printer)', w: 58, h: 297 },
 };
 
 export const FONTS = {
@@ -48,9 +49,14 @@ export const FONTS = {
   mono: { label: 'Courier New', css: "'Courier New', Courier, monospace" },
 };
 
+// receipt rolls (thermal / mini printers): always portrait, and the page is as long as the receipt
+export const isRoll = (page) => page?.size === 'R80' || page?.size === 'R58';
+// margin that suits the printable width of each roll (most printers print 72 mm of an 80 mm roll, 48 mm of a 58 mm roll)
+export const ROLL_MARGIN = { R80: 4, R58: 5 };
+
 export function pageSize(page) {
   const p = PAPERS[page?.size] || PAPERS.A4;
-  return page?.orientation === 'landscape' && page?.size !== 'R80' ? { w: p.h, h: p.w } : { w: p.w, h: p.h };
+  return page?.orientation === 'landscape' && !isRoll(page) ? { w: p.h, h: p.w } : { w: p.w, h: p.h };
 }
 export function contentSize(page) {
   const { w, h } = pageSize(page);

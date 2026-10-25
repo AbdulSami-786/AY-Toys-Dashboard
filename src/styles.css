@@ -103,8 +103,13 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
+/* off-screen but laid out, so a receipt can be measured before it prints */
 #print-root {
-  display: none;
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 button,
 input,
@@ -2400,6 +2405,8 @@ pre.code {
   }
   #print-root {
     display: block !important;
+    position: static !important;
+    visibility: visible !important;
   }
   .modal-backdrop,
   .toasts,
@@ -2543,6 +2550,29 @@ pre.code {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+/* receipt rolls: boxes stack and grow with their text instead of sitting at fixed positions */
+.tdoc-band.flow {
+  display: flex;
+  flex-direction: column;
+}
+.tflow-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.tbox.flow {
+  position: relative;
+  overflow: visible;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.tbox.flow .tb-label {
+  white-space: normal;
+}
+.tbox.flow.k-sign {
+  margin-top: 6mm;
+  justify-content: flex-start;
 }
 .tbox.lp-left {
   flex-direction: row;
@@ -2701,6 +2731,14 @@ table.tdoc-lines {
 }
 .tdoc-lines.zebra tbody tr:nth-child(even) td {
   background: #f3f4f6;
+}
+.tdoc-lines.tiny th,
+.tdoc-lines.tiny td {
+  padding: 0.8mm 0.7mm;
+}
+.tdoc-lines.tiny th {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 .tdoc-nolines {
   height: 8mm;

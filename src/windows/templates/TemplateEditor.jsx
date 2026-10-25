@@ -21,6 +21,8 @@ import {
   defaultLayout,
   rescaleBoxes,
   narrowColumns,
+  isRoll,
+  ROLL_MARGIN,
   buildDocContext,
   sampleDoc,
   fieldsForForm,
@@ -107,8 +109,8 @@ export default function TemplateEditor({ templateId, formType, draft, tab: initi
     const prev = tRef.current;
     let page = { ...prev.page, [k]: v };
     let style = prev.style;
-    if (k === 'size' && v === 'R80') {
-      page = { ...page, margin: 3, orientation: 'portrait' };
+    if (k === 'size' && isRoll({ size: v })) {
+      page = { ...page, margin: ROLL_MARGIN[v], orientation: 'portrait' };
       style = { ...style, footerAtBottom: false, fontSize: Math.min(num(style.fontSize) || 9, 8) };
     }
     const oldW = contentSize(prev.page).w;
@@ -489,7 +491,7 @@ function BasicPanel({ t, form, set, setStyle, setCo, setPage, makeDefault, setMa
           </select>
         </Field>
         <Field label="Orientation">
-          <select value={t.page.orientation} disabled={t.page.size === 'R80'} onChange={(e) => setPage('orientation', e.target.value)}>
+          <select value={t.page.orientation} disabled={isRoll(t.page)} onChange={(e) => setPage('orientation', e.target.value)}>
             <option value="portrait">Portrait</option>
             <option value="landscape">Landscape</option>
           </select>

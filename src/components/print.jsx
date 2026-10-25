@@ -17,7 +17,7 @@ export function PrintProvider({ children }) {
   }, []);
   const print = useCallback((node) => {
     setContent(node);
-    setTimeout(() => window.print(), 80);
+    setTimeout(() => window.print(), 250); // after the page length has been measured (PageRule)
   }, []);
   const root = document.getElementById('print-root');
   return (
