@@ -224,7 +224,7 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
   // on a roll the box keeps its width (as a share of the paper) but its height follows the text
   const fixedH = b.kind === 'sign' || b.kind === 'line' || b.kind === 'logo';
   const place = flow
-    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', marginLeft: (flow.ml / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: b.kind === 'logo' ? b.h + 'mm' : undefined }
+    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: b.kind === 'logo' ? b.h + 'mm' : undefined }
     : { left: b.x + 'mm', top: b.y + 'mm', width: b.w + 'mm', height: b.h + 'mm' };
   const style = {
     ...place,

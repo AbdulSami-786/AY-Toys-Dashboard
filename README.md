@@ -67,10 +67,10 @@ are switched off.
 
 `npm run release` builds, in `release/` (nothing else is left there):
 
-- **AY Toys Setup 1.11.0.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
+- **AY Toys Setup 1.11.1.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
   Windows Settings › Apps. Installs for the current user (no admin rights).
-- **AY Toys 1.11.0 Portable.exe** — the same program as one file, runs without installing.
-- **AY Toys 1.11.0.zip** — both files in one zip, to send to another computer.
+- **AY Toys 1.11.1 Portable.exe** — the same program as one file, runs without installing.
+- **AY Toys 1.11.1.zip** — both files in one zip, to send to another computer.
 
 Change `version` in `package.json` for every new release, so the file names show it is new.
 

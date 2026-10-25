@@ -2762,15 +2762,33 @@ table.tdoc-lines {
   padding-top: 1.1mm;
   padding-bottom: 1.1mm;
 }
-/* numbers never wrap or spill: the item column takes whatever width is left and wraps instead */
+/* amounts never wrap or spill: the item column takes whatever width is left and wraps instead */
 .tdoc.roll table.tdoc-lines {
   table-layout: auto;
 }
 .tdoc.roll .tdoc-lines th,
-.tdoc.roll .tdoc-lines td.n,
 .tdoc.roll .tdoc-lines td.q {
+  overflow-wrap: normal;
+}
+.tdoc.roll .tdoc-lines td.n {
   white-space: nowrap;
   overflow-wrap: normal;
+}
+/* a box that does not fit beside the others drops to the next line (and stretches across it) instead of running off the paper */
+.tdoc.roll .tflow-row {
+  flex-wrap: wrap;
+}
+.tdoc.roll .tbox.flow {
+  flex: 1 1 auto;
+  min-width: min-content;
+  max-width: 100%;
+}
+.tdoc.roll .tb-val,
+.tdoc.roll .tb-pre {
+  overflow-wrap: break-word;
+}
+.tdoc.roll .tb-totals .tt span:last-child {
+  white-space: nowrap;
 }
 .tdoc.roll .tdoc-lines tr.tdoc-total td {
   border-top: 0.35mm solid #000;
