@@ -8,7 +8,7 @@ import { usePrint, TxnPrint } from '../../components/print';
 import Combo from '../../components/Combo';
 import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
-import { StdRibbon, FormActions, useTxnController, ensureTrailing, SideCard, TB, TemplatePicker } from './common';
+import { StdRibbon, FormActions, useTxnController, ensureTrailing, SideCard, TB, TemplatePicker, useItemNotFound, focusLineAfterItem } from './common';
 import { useFormTemplate } from '../../store/templates';
 import { NameCombo } from '../NameModals';
 import { ItemModal } from '../ItemList';
@@ -167,6 +167,10 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
       lines[i] = l;
       return { ...x, itemLines: ensureTrailing(lines, blankItem, emptyItem) };
     });
+  const itemNotFound = useItemNotFound(
+    (it, ctx) => setItem(ctx.line, { itemId: it.id }),
+    (name, ctx) => setSub({ kind: 'item', name, ...ctx }),
+  );
   const removeLine = (which, i) =>
     setF((x) =>
       which === 'exp'
@@ -334,13 +338,20 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
         </thead>
         <tbody>
           {f.itemLines.map((l, i) => (
-            <tr key={l.key}>
+            <tr key={l.key} data-key={l.key}>
               <td>
-                <Combo value={l.itemId} options={O.itemOpts} onChange={(id) => setItem(i, { itemId: id })} onAddNew={(name) => setSub({ kind: 'item', name, line: i })} dropWidth={460} />
+                <Combo
+                  value={l.itemId}
+                  options={O.itemOpts}
+                  onChange={(id) => setItem(i, { itemId: id })}
+                  onAddNew={(name) => setSub({ kind: 'item', name, line: i, key: l.key })}
+                  onNotFound={(name) => itemNotFound(name, { line: i, key: l.key })}
+                  dropWidth={460}
+                />
               </td>
               {colOn('desc') && (
                 <td>
-                  <input value={l.description || ''} onChange={(e) => setItem(i, { description: e.target.value })} />
+                  <input data-col="desc" value={l.description || ''} onChange={(e) => setItem(i, { description: e.target.value })} />
                 </td>
               )}
               <td>
@@ -561,13 +572,15 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
           initial={{ name: sub.name }}
           onClose={() => setSub(null)}
           onSaved={(it) => {
-            const line = sub.line;
+            const { line: l0, key } = sub;
             setF((x) => {
               const lines = [...x.itemLines];
+              const line = lines.findIndex((l) => l.key === key) >= 0 ? lines.findIndex((l) => l.key === key) : l0;
               const q = num(lines[line]?.qty) || 1;
-              lines[line] = { ...blankItem(), itemId: it.id, description: it.purchaseDescription || it.name, qty: q, uom: it.uom, cost: num(it.cost), amount: round2(q * num(it.cost)) };
+              lines[line] = { ...blankItem(), key: lines[line]?.key || key, itemId: it.id, description: it.purchaseDescription || it.name, qty: q, uom: it.uom, cost: num(it.cost), amount: round2(q * num(it.cost)) };
               return { ...x, itemLines: ensureTrailing(lines, blankItem, emptyItem) };
             });
+            focusLineAfterItem(key);
           }}
         />
       )}

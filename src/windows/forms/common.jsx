@@ -487,6 +487,34 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
   return { save, del, reset, load, isNew, dirty, seq, ribbonProps, modals, setModal, keys, setTitle };
 }
 
+// A name typed in an item field that matches no item: say so, and on Enter open the New Item form.
+// pick(item, ctx) uses an item that already exists (e.g. an inactive one that was just switched on); add(name, ctx) opens the form.
+export function useItemNotFound(pick, add) {
+  const { data, saveRecord } = useStore();
+  const dlg = useDialog();
+  return async (name, ctx) => {
+    const q = name.trim().toLowerCase();
+    const old = data.items.find((i) => [i.name, i.sku, i.barcode].some((v) => v && String(v).trim().toLowerCase() === q));
+    if (old?.active === false) {
+      if (await dlg.confirm(`"${old.name}" is an inactive item.\n\nMake it active and use it here?`, { ok: 'Make Active' })) pick(saveRecord('items', { ...old, active: true }), ctx);
+      return;
+    }
+    if (old) return pick(old, ctx);
+    if (await dlg.confirm(`Item "${name}" was not found.\n\nPress Enter to add it as a new item.`, { title: 'Item not found', ok: 'Add New Item' })) add(name, ctx);
+  };
+}
+
+// After an item was created from a line: put the cursor on that line's first number field (Ctn / Pcs / Qty).
+// Waits a moment because closing the New Item dialog gives focus back to the item field first.
+export function focusLineAfterItem(key) {
+  setTimeout(() => {
+    const tr = document.querySelector(`tr[data-key="${key}"]`);
+    const el = tr?.querySelector('input:not([disabled]):not([readonly]):not([data-combo]):not([data-col])');
+    el?.focus();
+    el?.select?.();
+  }, 150);
+}
+
 export const blankLine = () => ({ key: Math.random().toString(36).slice(2), itemId: '', description: '', qty: '', uom: '', rate: '', amount: '', taxable: false });
 
 // keep exactly one empty line at the end of a grid

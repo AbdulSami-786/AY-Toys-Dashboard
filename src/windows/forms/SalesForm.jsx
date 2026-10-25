@@ -8,7 +8,7 @@ import { usePrint, TxnPrint } from '../../components/print';
 import Combo from '../../components/Combo';
 import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
-import { StdRibbon, FormActions, useTxnController, blankLine, ensureTrailing, SideCard, TB, TemplatePicker } from './common';
+import { StdRibbon, FormActions, useTxnController, blankLine, ensureTrailing, SideCard, TB, TemplatePicker, useItemNotFound, focusLineAfterItem } from './common';
 import { useFormTemplate } from '../../store/templates';
 import { NameCombo } from '../NameModals';
 import { ItemModal } from '../ItemList';
@@ -199,6 +199,11 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
       if (k === 'terms') n.dueDate = dueFromTerms(n.date, n.terms);
       return n;
     });
+
+  const itemNotFound = useItemNotFound(
+    (it, ctx) => setLine(ctx.line, { itemId: it.id }),
+    (name, ctx) => setSub({ kind: 'item', name, ...ctx }),
+  );
 
   const setLine = (i, patch) =>
     setF((x) => {
@@ -519,7 +524,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                     const short = shortLines.includes(l);
                     const computed = calcByKey.get(l.key);
                     return (
-                      <tr key={l.key} className={(i === cur ? 'cur ' : '') + (short ? 'warn' : '')} onFocus={() => setCur(i)}>
+                      <tr key={l.key} data-key={l.key} className={(i === cur ? 'cur ' : '') + (short ? 'warn' : '')} onFocus={() => setCur(i)}>
                         <td className="ro" style={{ textAlign: 'center' }}>
                           {isEmptyLine(l) ? '' : i + 1}
                         </td>
@@ -528,13 +533,14 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                             value={l.itemId}
                             options={O.itemOpts}
                             onChange={(id) => setLine(i, { itemId: id })}
-                            onAddNew={(name) => setSub({ kind: 'item', name, line: i })}
+                            onAddNew={(name) => setSub({ kind: 'item', name, line: i, key: l.key })}
+                            onNotFound={(name) => itemNotFound(name, { line: i, key: l.key })}
                             dropWidth={460}
                           />
                         </td>
                         {colOn('desc') && (
                           <td>
-                            <input value={l.description || ''} onChange={(e) => setLine(i, { description: e.target.value })} />
+                            <input data-col="desc" value={l.description || ''} onChange={(e) => setLine(i, { description: e.target.value })} />
                           </td>
                         )}
                         {colOn('pkg') && <td className="ro">{num(l.pkg) || num(it?.pkg) ? fq(num(l.pkg) || num(it?.pkg)) : ''}</td>}
@@ -759,12 +765,14 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
           initial={{ name: sub.name }}
           onClose={() => setSub(null)}
           onSaved={(it) => {
-            const line = sub.line;
+            const { line, key } = sub;
             setTimeout(() => setF((x) => {
               const lines = [...x.lines];
-              lines[line] = { ...lineFor(it, x.customerId, lines[line]), key: lines[line]?.key || Math.random().toString(36).slice(2) };
+              const at = lines.findIndex((l) => l.key === key) >= 0 ? lines.findIndex((l) => l.key === key) : line;
+              lines[at] = { ...lineFor(it, x.customerId, lines[at]), key: lines[at]?.key || key || Math.random().toString(36).slice(2) };
               return { ...x, lines: ensureTrailing(lines, blankLine, isEmptyLine) };
             }), 0);
+            focusLineAfterItem(key);
           }}
         />
       )}
