@@ -12,6 +12,18 @@ export const parseISO = (s) => {
 
 export const today = () => toISO(new Date());
 
+// time of day as "HH:MM" (24 h, what <input type="time"> uses) and shown as "02:30 PM"
+export const nowTime = () => {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+};
+export function fmtTime(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm || ''));
+  if (!m) return '';
+  const h = Number(m[1]);
+  return `${String(h % 12 || 12).padStart(2, '0')}:${m[2]} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
 export function addDays(iso, n) {
   const d = parseISO(iso);
   d.setDate(d.getDate() + n);

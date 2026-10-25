@@ -7,7 +7,7 @@
 // between the bands, so any number of lines prints correctly (continuing on the next page).
 
 import { uid, money, num, qty as fmtQty, round2 } from './format';
-import { fmtDate } from './dates';
+import { fmtDate, fmtTime } from './dates';
 import { salesTotals } from './ledger';
 
 export const PX_PER_MM = 96 / 25.4;
@@ -78,6 +78,7 @@ export const FIELDS = {
   companyNtn: { label: 'NTN / Tax ID', group: 'Company', forms: ALL },
   title: { label: 'Form Title', group: 'Header', forms: ALL },
   date: { label: 'Date', group: 'Header', forms: ALL },
+  time: { label: 'Time', group: 'Header', forms: [...SALES, ...PURCH], screen: [...SALES, ...PURCH] },
   num: { label: 'Number', group: 'Header', forms: ALL },
   billTo: { label: 'Bill To', group: 'Header', forms: ALL, screen: [...SALES, ...PURCH] },
   shipTo: { label: 'Ship To', group: 'Header', forms: ['invoice', 'estimate', 'salesorder', 'purchaseorder'], screen: ['invoice', 'estimate', 'salesorder'] },
@@ -312,6 +313,7 @@ export function defaultLayout(formType, W = 186) {
   const cat = formCat(formType);
   const hasShip = ['invoice', 'estimate', 'salesorder', 'purchaseorder'].includes(formType);
   const strip = STRIP[formType] || [];
+  const hasTime = FIELDS.time.forms.includes(formType);
   const [sign1, sign2] = SIGNS[cat];
   const H = [];
   const F = [];
@@ -324,6 +326,7 @@ export function defaultLayout(formType, W = 186) {
     H.push(mk('header', 'title', { x: X(106), y: 0, w: W - X(106), h: 11 }));
     H.push(mk('header', 'date', { x: W - X(60), y: 14, w: X(30), h: 11 }));
     H.push(mk('header', 'num', { x: W - X(30), y: 14, w: X(30), h: 11 }));
+    if (hasTime) H.push(mk('header', 'time', { x: W - X(60), y: 26, w: X(30), h: 10 }));
     H.push(mk('header', 'billTo', { x: 0, y: 36, w: X(90), h: 27 }));
     if (hasShip) H.push(mk('header', 'shipTo', { x: W - X(90), y: 36, w: X(90), h: 27 }));
     if (strip.length) {
@@ -351,8 +354,10 @@ export function defaultLayout(formType, W = 186) {
     H.push(mk('header', 'title', { x: 0, y: 25, w: W, h: 9, align: 'center', size: 15 }));
     H.push(mk('header', 'date', { x: 0, y: 36, w: hw, h: 10 }));
     H.push(mk('header', 'num', { x: hw, y: 36, w: W - hw, h: 10 }));
-    H.push(mk('header', 'billTo', { x: 0, y: 48, w: W, h: 20 }));
-    let y = 70;
+    if (hasTime) H.push(mk('header', 'time', { x: 0, y: 47, w: W, h: 10 }));
+    const dy = hasTime ? 10 : 0;
+    H.push(mk('header', 'billTo', { x: 0, y: 48 + dy, w: W, h: 20 }));
+    let y = 70 + dy;
     strip.forEach((f, i) => {
       const left = i % 2 === 0;
       H.push(mk('header', f, { x: left ? 0 : hw, y, w: left ? hw : W - hw, h: 10 }));
@@ -616,6 +621,7 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
     companyNtn: company?.ntn || '',
     title: tpl?.title ?? FORM_MAP[type]?.title ?? '',
     date: d(t.date),
+    time: fmtTime(t.time),
     num: t.num || '',
     billTo,
     shipTo: t.shipTo || (type === 'purchaseorder' ? [coName, coAddress].filter(Boolean).join('\n') : ''),
@@ -714,7 +720,7 @@ export function sampleDoc(formType, company, template) {
     vendorMap: new Map([[vendor.id, vendor]]),
     accountMap: accounts,
   };
-  const base = { id: '', type: formType, num: cat === 'sales' ? '1024' : cat === 'payment' ? 'RCV-118' : 'B-2207', date: new Date().toISOString().slice(0, 10) };
+  const base = { id: '', type: formType, num: cat === 'sales' ? '1024' : cat === 'payment' ? 'RCV-118' : 'B-2207', date: new Date().toISOString().slice(0, 10), time: '14:30' };
   const docs = new Map([
     ['d1', { id: 'd1', type: formType === 'payment' ? 'invoice' : 'bill', num: formType === 'payment' ? '1019' : 'B-2190', date: base.date, total: 45200 }],
     ['d2', { id: 'd2', type: formType === 'payment' ? 'invoice' : 'bill', num: formType === 'payment' ? '1021' : 'B-2198', date: base.date, total: 18750 }],
@@ -819,4 +825,35 @@ export function rescaleBoxes(tpl, oldW, newW) {
 
 export function newTemplateFrom(base, name) {
   return { ...base, id: uid(), name, boxes: base.boxes.map((b) => ({ ...b, id: uid().slice(0, 8) })), updatedAt: new Date().toISOString() };
+}
+
+// ---------------------------------------------------------------- import / export (.aytemplate.json)
+
+export const TEMPLATE_FILE_APP = 'AY Toys Templates';
+
+export function templateExportPayload(tpls) {
+  return { app: TEMPLATE_FILE_APP, version: 1, exportedAt: new Date().toISOString(), templates: tpls.map(compactTemplate) };
+}
+
+// Read an exported file. Every template gets a fresh id, so importing never replaces an existing template.
+// Returns { templates, skipped } or throws a readable Error.
+export function parseTemplateFile(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error('This is not a template file (it could not be read).');
+  }
+  if (!data || data.app !== TEMPLATE_FILE_APP || !Array.isArray(data.templates)) throw new Error('This is not an AY Toys template file. Use a file made with "Export" on the Templates screen.');
+  const templates = [];
+  let skipped = 0;
+  data.templates.forEach((raw) => {
+    if (!raw || !FORM_MAP[raw.formType] || !Array.isArray(raw.boxes)) {
+      skipped++;
+      return;
+    }
+    const t = normalizeTemplate(raw);
+    templates.push({ ...t, id: uid(), name: String(raw.name || '').trim() || t.name, boxes: t.boxes.map((b) => ({ ...b, id: uid().slice(0, 8) })) });
+  });
+  return { templates, skipped };
 }

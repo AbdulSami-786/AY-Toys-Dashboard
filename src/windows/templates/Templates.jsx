@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Files, Plus, Pencil, Columns3, LayoutTemplate, Copy, Star, Trash2, RotateCcw, Printer } from 'lucide-react';
+import { Files, Plus, Pencil, Columns3, LayoutTemplate, Copy, Star, Trash2, RotateCcw, Printer, Download, Upload } from 'lucide-react';
 import { useStore } from '../../store/store';
 import { useWindowKeys } from '../../store/windows';
 import { useNav } from '../../store/nav';
@@ -9,8 +9,10 @@ import { Field } from '../../components/inputs';
 import { useListNav } from '../../components/listnav';
 import { usePrint, TemplatePrint } from '../../components/print';
 import { PageSheet, fitScale } from '../../components/TemplateDoc';
-import { TEMPLATE_FORMS, FORM_MAP, sampleDoc, newTemplateFrom, isStdId, PAPERS } from '../../lib/templates';
+import { TEMPLATE_FORMS, FORM_MAP, sampleDoc, newTemplateFrom, isStdId, PAPERS, templateExportPayload, parseTemplateFile } from '../../lib/templates';
 import { useWidth } from '../../components/useWidth';
+import { downloadFile } from '../../lib/format';
+import { SHEET_CELL_LIMIT } from '../../store/templates';
 
 export default function Templates({ formType: initialType = '' }) {
   const { company } = useStore();
@@ -22,6 +24,7 @@ export default function Templates({ formType: initialType = '' }) {
   const [sel, setSel] = useState(null);
   const [creating, setCreating] = useState(false);
   const listRef = useRef(null);
+  const fileRef = useRef(null);
   const prevRef = useRef(null);
   const pw = useWidth(prevRef);
 
@@ -48,6 +51,28 @@ export default function Templates({ formType: initialType = '' }) {
     if (await dlg.confirm(`Delete the template "${cur.name}"?\n\nForms that used it will print with the default ${FORM_MAP[cur.formType].label} template.`, { ok: 'Delete', danger: true })) {
       api.remove(cur.id);
       setSel(null);
+    }
+  };
+  const exportTemplates = (list, fileName) => {
+    if (!list.length) return;
+    downloadFile(`${fileName.replace(/[^\w]+/g, '_')}.aytemplate.json`, JSON.stringify(templateExportPayload(list), null, 1), 'application/json');
+    dlg.toast(list.length === 1 ? `Exported "${list[0].name}"` : `Exported ${list.length} templates`);
+  };
+  const importFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const { templates, skipped } = parseTemplateFile(await file.text());
+      if (!templates.length) throw new Error('No usable templates were found in this file.');
+      const { size } = api.saveMany(templates);
+      setFilter('all');
+      setSel(templates[0].id);
+      dlg.toast(`Imported ${templates.length} template${templates.length === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}`);
+      if (size > SHEET_CELL_LIMIT * 0.9)
+        await dlg.alert(`Your templates now use ${Math.round(size / 1000)} KB. A Google Sheet cell holds about ${SHEET_CELL_LIMIT / 1000} KB, so Google Sheets sync of company settings may fail.\n\nDelete templates you no longer need.`);
+    } catch (err) {
+      dlg.alert(err.message || 'Could not import this file.');
     }
   };
   const makeDefault = () => {
@@ -105,6 +130,16 @@ export default function Templates({ formType: initialType = '' }) {
           {cur && isStdId(cur.id) ? <RotateCcw size={13} /> : <Trash2 size={13} />} {cur && isStdId(cur.id) ? 'Reset' : 'Delete'}
         </button>
         <span className="sp" />
+        <button className="btn sm" onClick={() => fileRef.current?.click()}>
+          <Upload size={13} /> Import
+        </button>
+        <button className="btn sm" disabled={!cur} onClick={() => exportTemplates([cur], cur.name)}>
+          <Download size={13} /> Export
+        </button>
+        <button className="btn sm" disabled={!rows.length} onClick={() => exportTemplates(rows, `${company.name}_templates`)}>
+          <Download size={13} /> Export All
+        </button>
+        <input ref={fileRef} type="file" accept=".json,application/json" hidden onChange={importFile} />
         <button className="btn sm" disabled={!cur} onClick={() => print(<TemplatePrint template={cur} ctx={ctx} />)}>
           <Printer size={13} /> Print Sample
         </button>

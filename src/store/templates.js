@@ -22,6 +22,19 @@ export function useTemplates() {
     [company, updateCompany],
   );
 
+  // save several at once (import): one company update, so none overwrites another
+  const saveMany = useCallback(
+    (tpls) => {
+      const now = new Date().toISOString();
+      const recs = tpls.map((tpl) => compactTemplate({ ...tpl, updatedAt: now }));
+      const ids = new Set(recs.map((r) => r.id));
+      const templates = [...(company.templates || []).filter((t) => !ids.has(t.id)), ...recs];
+      updateCompany(company.id, { templates });
+      return { saved: recs, size: JSON.stringify(templates).length };
+    },
+    [company, updateCompany],
+  );
+
   // deleting a standard template = reset it to the built-in layout
   const remove = useCallback(
     (id) => {
@@ -45,6 +58,7 @@ export function useTemplates() {
     defaultId: (formType) => defaultTemplateId(company, formType),
     isCustomized: (id) => isStdId(id) && (company.templates || []).some((t) => t.id === id),
     save,
+    saveMany,
     remove,
     setDefault,
   };

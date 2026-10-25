@@ -89,6 +89,7 @@ function docDetail({ t, company, L, ledger, ctrlLines, paidBy, open }) {
   const cat = FORM_MAP[t.type].cat;
   const meta = [
     ['Date', v.date],
+    ['Time', v.time],
     ['Due date', v.dueDate],
     ['Terms', v.terms],
     ['P.O. No.', v.poNumber],

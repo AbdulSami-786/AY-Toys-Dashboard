@@ -15,7 +15,7 @@ import { ItemModal } from '../ItemList';
 import { AccountModal } from '../ChartOfAccounts';
 import { displayBal, txnTotal } from '../../lib/ledger';
 import { money, num, round2, qty as fq } from '../../lib/format';
-import { today, dueFromTerms, fmtDate } from '../../lib/dates';
+import { today, nowTime, dueFromTerms, fmtDate } from '../../lib/dates';
 import { TXN_TYPES } from '../../store/defaults';
 import { memoTemplate } from '../../lib/memorize';
 
@@ -81,6 +81,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
       type,
       num: meta.start ? nextNum(type, meta.start) : '',
       date,
+      time: nowTime(),
       dueDate: date,
       vendorId: '',
       address: '',
@@ -412,6 +413,11 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
                 <Field label="Date">
                   <DateInput value={f.date} onChange={set('date')} />
                 </Field>
+                {scr('time') && (
+                  <Field label={lbl('time', 'Time')}>
+                    <input type="time" value={f.time || ''} onChange={set('time')} />
+                  </Field>
+                )}
                 <Field label={lbl('num', meta.numLabel)}>
                   <input value={f.num || ''} onChange={set('num')} />
                 </Field>

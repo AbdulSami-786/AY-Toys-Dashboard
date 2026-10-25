@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react';
-import { Upload, Download, FileSpreadsheet } from 'lucide-react';
-import { useStore, useLookups } from '../store/store';
-import { useDialog, Tabs } from '../components/ui';
+import { useState } from 'react';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import { useStore } from '../store/store';
+import { Tabs } from '../components/ui';
 import { toCSV, downloadFile } from '../lib/format';
-import { parseCSV, rowsToObjects, buildRecords } from '../lib/importData';
+import { TEMPLATE_KINDS, KIND_LABEL, SPECS, downloadTemplate } from '../lib/importTemplates';
+import DataImport from './DataImport';
 
 const TEMPLATES = {
   items: ['Name', 'SKU', 'Type', 'Category', 'Description', 'U/M', 'Cost', 'Price', 'Reorder Point', 'Barcode'],
@@ -13,29 +14,9 @@ const TEMPLATES = {
 };
 
 export default function ImportExport({ tab: t0 = 'import' }) {
-  const { data, saveMany, company } = useStore();
-  const L = useLookups();
-  const dlg = useDialog();
+  const { data, company } = useStore();
   const [tab, setTab] = useState(t0);
-  const [kind, setKind] = useState('items');
-  const [preview, setPreview] = useState(null);
-  const fileRef = useRef(null);
-
-  const onFile = async (e) => {
-    const f = e.target.files?.[0];
-    e.target.value = '';
-    if (!f) return;
-    const rows = parseCSV((await f.text()).replace(/^﻿/, ''));
-    if (rows.length < 2) return dlg.alert('The file has no data rows.');
-    const { objs } = rowsToObjects(rows);
-    setPreview(buildRecords({ [kind]: objs }, data)[kind]);
-  };
-
-  const doImport = () => {
-    saveMany(kind, preview.recs);
-    dlg.toast(`Imported ${preview.recs.length} ${kind}`);
-    setPreview(null);
-  };
+  const [tpl, setTpl] = useState('all');
 
   const exportList = (k) => {
     let out;
@@ -49,6 +30,8 @@ export default function ImportExport({ tab: t0 = 'import' }) {
     }
     downloadFile(`${company.name}_${k}.csv`, toCSV(out), 'text/csv');
   };
+
+  const shown = tpl === 'all' ? TEMPLATE_KINDS : [tpl];
 
   return (
     <div className="win">
@@ -68,57 +51,43 @@ export default function ImportExport({ tab: t0 = 'import' }) {
         {tab === 'import' ? (
           <>
             <div className="flex mb">
-              <select value={kind} onChange={(e) => (setKind(e.target.value), setPreview(null))} style={{ width: 180 }}>
-                <option value="items">Items</option>
-                <option value="customers">Customers</option>
-                <option value="vendors">Vendors</option>
-                <option value="accounts">Chart of Accounts</option>
+              <button className="btn" onClick={() => downloadTemplate(tpl)}>
+                <Download size={14} /> Download template (Excel)
+              </button>
+              <select value={tpl} onChange={(e) => setTpl(e.target.value)} style={{ width: 240 }} title="Which template to download">
+                <option value="all">All — every page in one file</option>
+                {TEMPLATE_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {KIND_LABEL[k]}
+                  </option>
+                ))}
               </select>
-              <button className="btn" onClick={() => downloadFile(`AY_Toys_${kind}_template.csv`, toCSV([TEMPLATES[kind]]), 'text/csv')}>
-                <Download size={14} /> Download template
-              </button>
-              <button className="btn primary" onClick={() => fileRef.current?.click()}>
-                <Upload size={14} /> Choose CSV file…
-              </button>
-              <input ref={fileRef} type="file" accept=".csv,text/csv" hidden onChange={onFile} />
             </div>
-            <p className="muted small">
-              Columns: <code>{TEMPLATES[kind].join(', ')}</code>. In Excel use <b>File › Save As › CSV UTF-8</b>. Names that already exist are skipped.
-              {kind === 'accounts' && ' Type must match a QuickBooks account type exactly (e.g. Expense, Bank, Other Current Asset).'}
-            </p>
-            {preview && (
-              <>
-                <div className="note mb">
-                  Ready to import <b>{preview.recs.length}</b> {kind}.{preview.skipped.length > 0 && ` Skipped ${preview.skipped.length}: ${preview.skipped.slice(0, 8).join(', ')}${preview.skipped.length > 8 ? '…' : ''}`}
-                </div>
-                <div className="tbl-wrap" style={{ maxHeight: 340, border: '1px solid var(--border)' }}>
-                  <table className="tbl">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Details</th>
+            <div className="tbl-wrap mb" style={{ maxHeight: 260, border: '1px solid var(--border)' }}>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Page</th>
+                    <th>Column</th>
+                    <th>Required?</th>
+                    <th>What to enter</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {shown.flatMap((k) =>
+                    SPECS[k].fields.map((f, i) => (
+                      <tr key={k + f.key}>
+                        <td>{i === 0 ? <b>{KIND_LABEL[k]}</b> : ''}</td>
+                        <td>{f.head}</td>
+                        <td>{f.req ? <span className="badge err">Required</span> : <span className="muted">optional</span>}</td>
+                        <td className="muted small">{f.note}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {preview.recs.slice(0, 200).map((r, i) => (
-                        <tr key={i}>
-                          <td>{r.name}</td>
-                          <td className="muted">{kind === 'items' ? `${r.type} · cost ${r.cost} · price ${r.price}` : kind === 'accounts' ? r.type : [r.phone, r.city].filter(Boolean).join(' · ')}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex mt">
-                  <button className="btn primary" onClick={doImport} disabled={!preview.recs.length}>
-                    Import {preview.recs.length} records
-                  </button>
-                  <button className="btn" onClick={() => setPreview(null)}>
-                    Cancel
-                  </button>
-                </div>
-              </>
-            )}
+                    )),
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <DataImport />
           </>
         ) : (
           <div className="grid2" style={{ maxWidth: 520 }}>
@@ -129,7 +98,6 @@ export default function ImportExport({ tab: t0 = 'import' }) {
             ))}
           </div>
         )}
-        <p className="muted small mt">{L.lists.uom.length ? '' : ''}</p>
       </div>
     </div>
   );

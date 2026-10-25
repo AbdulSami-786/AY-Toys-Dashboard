@@ -3,7 +3,7 @@ import { addDays, addMonths, today } from './dates';
 
 // Only the reusable parts: no dates, number, links to other documents, payments or received quantities.
 // (A memorized bill that received a PO must not receive it again; an old due date would be overdue at once.)
-const DROP = ['id', 'num', 'date', 'dueDate', 'shipDate', 'expectedDate', 'createdAt', 'updatedAt', 'voided', 'sourceId', 'closed', 'autoClosed', 'applied', 'credits', 'appliedMap', 'payments'];
+const DROP = ['id', 'num', 'date', 'time', 'dueDate', 'shipDate', 'expectedDate', 'createdAt', 'updatedAt', 'voided', 'sourceId', 'closed', 'autoClosed', 'applied', 'credits', 'appliedMap', 'payments'];
 const cleanLines = (lines) => (Array.isArray(lines) ? lines.map(({ received, invoiced, key, ...l }) => l) : lines);
 
 export function memoTemplate(txn) {

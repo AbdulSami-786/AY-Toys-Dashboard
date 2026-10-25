@@ -15,7 +15,7 @@ import { ItemModal } from '../ItemList';
 import { salesTotals, txnTotal } from '../../lib/ledger';
 import { cartonTotals } from '../../lib/templates';
 import { money, num, round2, qty as fq } from '../../lib/format';
-import { today, dueFromTerms, fmtDate } from '../../lib/dates';
+import { today, nowTime, dueFromTerms, fmtDate } from '../../lib/dates';
 import { TXN_TYPES } from '../../store/defaults';
 import { memoTemplate } from '../../lib/memorize';
 
@@ -106,6 +106,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
       type,
       num: nextNum(type, meta.start),
       date,
+      time: nowTime(),
       customerId: '',
       billTo: '',
       shipTo: '',
@@ -414,6 +415,11 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                 <Field label="Date">
                   <DateInput value={f.date} onChange={set('date')} />
                 </Field>
+                {scr('time') && (
+                  <Field label={lbl('time', 'Time')}>
+                    <input type="time" value={f.time || ''} onChange={set('time')} />
+                  </Field>
+                )}
                 <Field label={lbl('num', meta.numLabel)}>
                   <input value={f.num || ''} onChange={set('num')} />
                 </Field>

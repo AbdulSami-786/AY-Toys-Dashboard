@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Upload, DatabaseBackup } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useDialog } from '../components/ui';
-import { KINDS, KIND_LABEL, readDataFile, buildRecords } from '../lib/importData';
+import { KINDS, KIND_LABEL, readDataFile, buildAll } from '../lib/importData';
 
 // "Import old data" for the open shop: pick a file, see what it holds, add it to this shop's books.
 export default function DataImport({ onDone }) {
@@ -45,11 +45,11 @@ export default function DataImport({ onDone }) {
     setKind('');
   };
 
-  const built = found?.format === 'lists' ? buildRecords(found.byKind, data) : null;
+  const built = found?.format === 'lists' ? buildAll(found.byKind, data, { dateStyle: company.dateStyle, depositTo: company.defaultDepositTo }) : null;
   const total = built ? KINDS.reduce((s, k) => s + (built[k]?.recs.length || 0), 0) : 0;
 
   const importLists = () => {
-    for (const k of KINDS) if (built[k]?.recs.length) saveMany(k, built[k].recs);
+    for (const k of KINDS) if (built[k]?.recs.length) saveMany(built[k].table || k, built[k].recs);
     dlg.toast(`Added ${total} record${total === 1 ? '' : 's'} to ${company.name}`);
     reset();
     onDone?.();
@@ -78,7 +78,7 @@ export default function DataImport({ onDone }) {
           <b>QuickBooks IIF</b> (<code>.iif</code>) — customers, vendors, items and chart of accounts, all in one go.
         </li>
         <li>
-          <b>CSV</b> of a QuickBooks list (Customer / Vendor / Item / Account list exported to Excel, saved as CSV) or our template from Lists › Import.
+          <b>Excel (<code>.xlsx</code>) or CSV</b> made from our template (get it with <b>Download template</b> in the Import / Export Lists window) — customers, vendors, items, chart of accounts, bills and invoices. A QuickBooks list exported to Excel/CSV works too.
         </li>
         <li>
           <b>AY Toys backup</b> (<code>.json</code>) — replaces everything in this shop.
@@ -136,7 +136,7 @@ export default function DataImport({ onDone }) {
                 <tr>
                   <th>List</th>
                   <th className="n">To add</th>
-                  <th className="n">Already there</th>
+                  <th className="n">Skipped</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,6 +150,19 @@ export default function DataImport({ onDone }) {
               </tbody>
             </table>
           </div>
+          {KINDS.filter((k) => built[k]?.skipped.length).map((k) => (
+            <details key={k} className="muted small mt">
+              <summary>
+                {KIND_LABEL[k]}: {built[k].skipped.length} skipped (already there, or a problem)
+              </summary>
+              <ul style={{ margin: '4px 0', paddingLeft: 20, maxHeight: 160, overflow: 'auto' }}>
+                {built[k].skipped.slice(0, 100).map((x, i) => (
+                  <li key={i}>{x}</li>
+                ))}
+                {built[k].skipped.length > 100 && <li>… and {built[k].skipped.length - 100} more</li>}
+              </ul>
+            </details>
+          ))}
           {found.txnLines > 0 && (
             <p className="muted small mt">
               This file also has {found.txnLines} transaction lines (invoices, bills, payments). Only the lists above are imported — transactions are not.
