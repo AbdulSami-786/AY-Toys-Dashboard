@@ -12,7 +12,7 @@ import { PageSheet, fitScale } from '../../components/TemplateDoc';
 import { TEMPLATE_FORMS, FORM_MAP, sampleDoc, newTemplateFrom, isStdId, PAPERS, templateExportPayload, parseTemplateFile } from '../../lib/templates';
 import { useWidth } from '../../components/useWidth';
 import { downloadFile } from '../../lib/format';
-import { SHEET_CELL_LIMIT } from '../../store/templates';
+import { TEMPLATE_SIZE_WARN, templateSizeWarning } from '../../store/templates';
 
 export default function Templates({ formType: initialType = '' }) {
   const { company } = useStore();
@@ -69,8 +69,7 @@ export default function Templates({ formType: initialType = '' }) {
       setFilter('all');
       setSel(templates[0].id);
       dlg.toast(`Imported ${templates.length} template${templates.length === 1 ? '' : 's'}${skipped ? ` (${skipped} skipped)` : ''}`);
-      if (size > SHEET_CELL_LIMIT * 0.9)
-        await dlg.alert(`Your templates now use ${Math.round(size / 1000)} KB. A Google Sheet cell holds about ${SHEET_CELL_LIMIT / 1000} KB, so Google Sheets sync of company settings may fail.\n\nDelete templates you no longer need.`);
+      if (size > TEMPLATE_SIZE_WARN) await dlg.alert(templateSizeWarning(size));
     } catch (err) {
       dlg.alert(err.message || 'Could not import this file.');
     }

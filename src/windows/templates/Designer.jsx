@@ -21,10 +21,13 @@ import {
   Check,
   Plus,
   EyeOff,
+  Upload,
 } from 'lucide-react';
 import { PageSheet } from '../../components/TemplateDoc';
 import { useWidth } from '../../components/useWidth';
+import { useDialog } from '../../components/ui';
 import { Field } from '../../components/inputs';
+import { readBoxImage } from '../../store/templates';
 import { FIELDS, BOX_KINDS, PX_PER_MM, contentSize, pageSize, fieldsForForm, fieldLabel, defaultFieldLabel, addBox } from '../../lib/templates';
 import { num, uid } from '../../lib/format';
 
@@ -49,6 +52,9 @@ export default function Designer({ t, ctx, sel, setSel, update, setT, pushHistor
   const [addBand, setAddBand] = useState('header');
   const canvasRef = useRef(null);
   const textRef = useRef(null);
+  const dlg = useDialog();
+  const imageFile = useRef(null);
+  const imageFor = useRef('new'); // 'new' = add an Image box, or the id of the Image box whose picture is being changed
   const W = contentSize(t.page).w;
   const cw = useWidth(canvasRef);
   const fit = cw ? Math.max(0.4, Math.min(2, Math.floor(((cw - 12) / (pageSize(t.page).w * PX_PER_MM)) * 20) / 20)) : 1;
@@ -186,6 +192,27 @@ export default function Designer({ t, ctx, sel, setSel, update, setT, pushHistor
     update(next);
     setSel(_added);
   };
+  // pick a picture from this computer: it becomes a new Image box, or replaces the picture of the selected one
+  const chooseImage = (target) => {
+    imageFor.current = target;
+    imageFile.current?.click();
+  };
+  const onImageFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const { src, w, h } = await readBoxImage(file);
+      if (imageFor.current === 'new') {
+        // as wide as 40 mm but no taller than 40 mm, in the picture's own proportions
+        const bw = Math.min(40, (40 * w) / h, W);
+        const bh = (bw * h) / w;
+        add('image', { src, w: Math.round(bw * 2) / 2, h: Math.max(3, Math.round(bh * 2) / 2) });
+      } else setBox(imageFor.current, { src });
+    } catch (err) {
+      dlg.alert(err.message);
+    }
+  };
   const addField = (f) => {
     const existing = t.boxes.find((b) => b.kind === 'field' && b.field === f);
     if (existing) {
@@ -252,6 +279,9 @@ export default function Designer({ t, ctx, sel, setSel, update, setT, pushHistor
           </button>
           <button className="btn sm" onClick={() => add('logo')}>
             <ImageIc size={13} /> Logo
+          </button>
+          <button className="btn sm" onClick={() => chooseImage('new')} title="Add a picture from this computer">
+            <Upload size={13} /> Image
           </button>
           <button className="btn sm" onClick={() => add('sign')}>
             <PenLine size={13} /> Signature
@@ -349,6 +379,7 @@ export default function Designer({ t, ctx, sel, setSel, update, setT, pushHistor
             onDuplicate={duplicate}
             onDelete={del}
             onOrder={order}
+            onPickImage={() => chooseImage(selBox.id)}
             setBandHeight={(band, h) => update((p) => ({ ...p, [bandKey(band)]: Math.max(p[bandKey(band)], h) }))}
           />
         ) : (
@@ -368,6 +399,7 @@ export default function Designer({ t, ctx, sel, setSel, update, setT, pushHistor
           </>
         )}
       </aside>
+      <input ref={imageFile} type="file" accept="image/*" hidden onChange={onImageFile} />
     </div>
   );
 }
@@ -420,11 +452,11 @@ function ColorPick({ value, onChange, none }) {
   );
 }
 
-function BoxProps({ b, t, W, patch, setLabel, textRef, onDuplicate, onDelete, onOrder, setBandHeight }) {
+function BoxProps({ b, t, W, patch, setLabel, textRef, onDuplicate, onDelete, onOrder, onPickImage, setBandHeight }) {
   const isField = b.kind === 'field';
   const hasLabel = isField && !COMPOSITE.has(b.field);
   const hasText = b.kind === 'text' || b.kind === 'sign';
-  const showFont = b.kind !== 'line' && b.kind !== 'rect' && b.kind !== 'logo';
+  const showFont = b.kind !== 'line' && b.kind !== 'rect' && b.kind !== 'logo' && b.kind !== 'image';
   return (
     <>
       <div className="dz-h">{isField ? 'Data field' : BOX_KINDS[b.kind]}</div>
@@ -477,6 +509,32 @@ function BoxProps({ b, t, W, patch, setLabel, textRef, onDuplicate, onDelete, on
         </Field>
       )}
 
+      {b.kind === 'image' && (
+        <>
+          <Field label="Picture">
+            <div className="logo-row" style={{ flexWrap: 'wrap' }}>
+              <div className="logo-thumb item-thumb">{b.src ? <img src={b.src} alt="" /> : <span className="muted small">None</span>}</div>
+              <button className="btn sm" onClick={onPickImage}>
+                <Upload size={13} /> {b.src ? 'Change picture…' : 'Choose picture…'}
+              </button>
+            </div>
+          </Field>
+          <Field label="Place in the box">
+            <div className="seg icons">
+              {[
+                ['left', AlignLeft],
+                ['center', AlignCenter],
+                ['right', AlignRight],
+              ].map(([a, Ic]) => (
+                <button key={a} className={b.align === a ? 'on' : ''} onClick={() => patch({ align: a })} title={'Align ' + a}>
+                  <Ic size={13} />
+                </button>
+              ))}
+            </div>
+          </Field>
+          <p className="muted small">The picture keeps its proportions inside the box. Drag the box handles to make it bigger or smaller.</p>
+        </>
+      )}
       {showFont && (
         <>
           <div className="dz-h">Font</div>
@@ -522,7 +580,7 @@ function BoxProps({ b, t, W, patch, setLabel, textRef, onDuplicate, onDelete, on
       )}
 
       <div className="dz-h">Look</div>
-      {b.kind !== 'rect' && b.kind !== 'logo' && (
+      {b.kind !== 'rect' && b.kind !== 'logo' && b.kind !== 'image' && (
         <Field label={b.kind === 'line' || b.kind === 'sign' ? 'Line color' : 'Text color'}>
           <ColorPick value={b.color} onChange={(v) => patch({ color: v })} none="Black" />
         </Field>

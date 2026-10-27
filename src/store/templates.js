@@ -5,8 +5,11 @@ import { allTemplates, compactTemplate, defaultTemplateId, getTemplate, isStdId 
 
 // Templates are stored on the company record (company.templates / company.templateDefaults),
 // so they sync to the Google Sheet "Companies" tab together with the rest of the company settings.
-// Google Sheets cells hold at most 50,000 characters.
-export const SHEET_CELL_LIMIT = 50000;
+// The sheet splits anything longer than a cell (50,000 characters) over extra columns (see Code.gs), so there is no hard limit,
+// but every sync downloads the templates: warn when they (pictures especially) get big enough to slow it down.
+export const TEMPLATE_SIZE_WARN = 400000;
+export const templateSizeWarning = (size) =>
+  `Your templates now use ${Math.round(size / 1000)} KB. They are sent with every Google Sheets sync, so this much makes syncing slow.\n\nDelete templates you no longer need, or remove some pictures.`;
 
 // Saved copies are compared by their stamp when computers sync (see mergeCompanies): a save is stamped later than the
 // copy it replaces, and than any "deleted" mark for it, so it wins even if this computer's clock is behind another's.
@@ -76,8 +79,8 @@ export function useFormTemplate(formType, templateId) {
   return useMemo(() => getTemplate(company, templateId, formType), [company, templateId, formType]);
 }
 
-// Shrink an uploaded logo so it fits comfortably in one Google Sheet cell
-export function readLogo(file) {
+// Shrink an uploaded logo (or other picture) so it stays small enough to travel with the company settings to the Google Sheet
+export function readLogo(file, { maxW: startW = 480, maxH: startH = 240, maxChars = 40000 } = {}) {
   return new Promise((resolve, reject) => {
     if (!file || !/^image\//.test(file.type)) return reject(new Error('Please choose an image file (PNG or JPG).'));
     const reader = new FileReader();
@@ -86,8 +89,8 @@ export function readLogo(file) {
       const img = new Image();
       img.onerror = () => reject(new Error('That image could not be opened.'));
       img.onload = () => {
-        let maxW = 480;
-        let maxH = 240;
+        let maxW = startW;
+        let maxH = startH;
         for (let attempt = 0; attempt < 6; attempt++) {
           const s = Math.min(1, maxW / img.width, maxH / img.height);
           const w = Math.max(1, Math.round(img.width * s));
@@ -110,15 +113,27 @@ export function readLogo(file) {
             [flat, 'image/jpeg', 0.85],
           ]) {
             const url = canvas.toDataURL(type, q);
-            if (url.startsWith('data:' + type) && url.length < 40000) return resolve(url);
+            if (url.startsWith('data:' + type) && url.length < maxChars) return resolve(url);
           }
           maxW = Math.round(maxW * 0.75);
           maxH = Math.round(maxH * 0.75);
         }
-        reject(new Error('This image is too detailed. Try a smaller or simpler logo.'));
+        reject(new Error('This image is too detailed. Try a smaller or simpler picture.'));
       };
       img.src = reader.result;
     };
     reader.readAsDataURL(file);
   });
+}
+
+// A picture for an Image box of a template (it is saved inside the template) → { src, w, h } with the picture's size in px
+export async function readBoxImage(file) {
+  const src = await readLogo(file, { maxW: 500, maxH: 500, maxChars: 30000 });
+  const size = await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.width, h: img.height });
+    img.onerror = () => resolve({ w: 1, h: 1 });
+    img.src = src;
+  });
+  return { src, ...size };
 }

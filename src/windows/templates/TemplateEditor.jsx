@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutTemplate, Printer, RotateCcw, Save, Upload, Trash2, ArrowUp, ArrowDown, Plus, PenLine, Type } from 'lucide-react';
 import { useStore, useLookups } from '../../store/store';
 import { useWindows, useWindowKeys } from '../../store/windows';
-import { useTemplates, readLogo, SHEET_CELL_LIMIT } from '../../store/templates';
+import { useTemplates, readLogo, TEMPLATE_SIZE_WARN, templateSizeWarning } from '../../store/templates';
 import { useDialog, Tabs } from '../../components/ui';
 import { Field } from '../../components/inputs';
 import { usePrint, TemplatePrint } from '../../components/print';
@@ -186,10 +186,7 @@ export default function TemplateEditor({ templateId, formType, draft, tab: initi
     if (!makeDefault && wasDefault && !isStdId(t.id)) api.setDefault(t.formType, 'std-' + t.formType);
     snapshot.current = JSON.stringify(t);
     dlg.toast(`Template "${t.name}" saved`);
-    if (size > SHEET_CELL_LIMIT * 0.9)
-      await dlg.alert(
-        `Your templates now use ${Math.round(size / 1000)} KB. A Google Sheet cell holds about ${SHEET_CELL_LIMIT / 1000} KB, so Google Sheets sync of company settings may fail.\n\nDelete templates you no longer need, or remove some text boxes.`,
-      );
+    if (size > TEMPLATE_SIZE_WARN) await dlg.alert(templateSizeWarning(size));
     if (andClose) close(winId);
     return true;
   };

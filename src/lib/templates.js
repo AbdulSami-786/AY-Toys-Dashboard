@@ -224,6 +224,7 @@ export const BOX_DEFAULTS = {
   kind: 'field',
   field: '',
   text: '',
+  src: '', // an Image box: the picture (a small data URL, saved inside the template)
   x: 0,
   y: 0,
   w: 40,
@@ -244,6 +245,7 @@ export const BOX_KINDS = {
   field: 'Data field',
   text: 'Text box',
   logo: 'Logo',
+  image: 'Image',
   sign: 'Signature line',
   line: 'Horizontal line',
   rect: 'Rectangle / frame',
@@ -281,6 +283,8 @@ export function boxPreset(kindOrField) {
       return { kind: 'text', text: 'Type your text here', w: 90, h: 10, labelPos: 'none' };
     case 'logo':
       return { kind: 'logo', w: 30, h: 22, labelPos: 'none' };
+    case 'image':
+      return { kind: 'image', w: 40, h: 30, labelPos: 'none' };
     case 'sign':
       return { kind: 'sign', text: 'Authorized Signature', w: 60, h: 12, labelPos: 'none', align: 'center' };
     case 'line':

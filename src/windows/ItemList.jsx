@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { Package, Plus, Pencil, Trash2, FileBarChart, Boxes, ClipboardList, AlertTriangle, Download, Table2 } from 'lucide-react';
+import { Package, Plus, Pencil, Trash2, FileBarChart, Boxes, ClipboardList, AlertTriangle, Download, Table2, Upload } from 'lucide-react';
 import { useStore, useLookups } from '../store/store';
 import { useWindowKeys } from '../store/windows';
 import { useNav } from '../store/nav';
@@ -10,6 +10,7 @@ import Combo from '../components/Combo';
 import { ITEM_TYPES } from '../store/defaults';
 import { money, num, qty as fq, toCSV, downloadFile } from '../lib/format';
 import { today } from '../lib/dates';
+import { readItemImage } from '../lib/itemImage';
 import { useListNav } from '../components/listnav';
 import { AccountModal } from './ChartOfAccounts';
 import { NameCombo } from './NameModals';
@@ -49,6 +50,17 @@ export function ItemModal({ initial, onClose, onSaved }) {
   }));
   const [sub, setSub] = useState(null);
   const set = (k) => (v) => setF((x) => ({ ...x, [k]: v?.target ? (v.target.type === 'checkbox' ? v.target.checked : v.target.value) : v }));
+  const imageFile = useRef(null);
+  const pickImage = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      set('image')(await readItemImage(file));
+    } catch (err) {
+      dlg.alert(err.message);
+    }
+  };
   // purchase and sales descriptions stay the same while this is ticked (like QuickBooks); untick to word them differently
   const [sameDesc, setSameDesc] = useState(() => f.description === f.purchaseDescription);
   const setDesc = (k) => (e) => {
@@ -140,6 +152,23 @@ export function ItemModal({ initial, onClose, onSaved }) {
           </Field>
           <Field label="Preferred vendor">
             <NameCombo which="vendor" value={f.preferredVendorId} onChange={(id) => set('preferredVendorId')(id)} />
+          </Field>
+          <Field label="Product image (can be printed on invoices)" className="span4">
+            <div className="logo-row">
+              <div className="logo-thumb item-thumb">{f.image ? <img src={f.image} alt="Product" /> : <span className="muted small">No image</span>}</div>
+              <div className="flex" style={{ flexWrap: 'wrap' }}>
+                <button type="button" className="btn sm" onClick={() => imageFile.current?.click()}>
+                  <Upload size={13} /> {f.image ? 'Change image…' : 'Choose image…'}
+                </button>
+                {f.image && (
+                  <button type="button" className="btn sm" onClick={() => set('image')('')}>
+                    <Trash2 size={13} /> Remove
+                  </button>
+                )}
+                <span className="muted small">Pick a picture from this computer (JPG or PNG). It is made small automatically and saved with the item.</span>
+              </div>
+            </div>
+            <input ref={imageFile} type="file" accept="image/*" hidden onChange={pickImage} />
           </Field>
         </div>
 
@@ -404,6 +433,7 @@ export default function ItemList() {
         <table className="tbl">
           <thead>
             <tr>
+              <th className="pic" />
               {th('name', 'Name')}
               {th('sku', 'SKU')}
               {th('description', 'Description')}
@@ -431,6 +461,7 @@ export default function ItemList() {
                   ctx.show(e, menu(i));
                 }}
               >
+                <td className="pic">{i.image && <img src={i.image} alt="" loading="lazy" decoding="async" />}</td>
                 <td className="b">{i.name}</td>
                 <td>{i.sku}</td>
                 <td className="muted">{i.description}</td>
@@ -457,7 +488,7 @@ export default function ItemList() {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={5}>Total</td>
+              <td colSpan={6}>Total</td>
               <td className="r">{fq(totals.qty)}</td>
               <td colSpan={5} />
               <td className="r">{money(totals.value)}</td>

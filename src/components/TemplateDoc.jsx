@@ -161,6 +161,7 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
   const bg = b.bg === 'accent' ? accent : b.bg || undefined;
   const base = num(tpl.style.fontSize || 9);
   const size = (b.size ? num(b.size) : base) * boost;
+  const pic = b.kind === 'logo' || b.kind === 'image';
 
   let label = null;
   let body = null;
@@ -208,10 +209,12 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
   } else if (b.kind === 'text') {
     empty = !b.text;
     body = <div className="tb-val">{b.text}</div>;
-  } else if (b.kind === 'logo') {
-    empty = !ctx.logo;
+  } else if (pic) {
+    // the logo is the company's one logo; an Image box carries its own picture
+    const src = b.kind === 'logo' ? ctx.logo : b.src;
+    empty = !src;
     const pos = b.align === 'center' ? 'center' : b.align === 'right' ? 'right center' : 'left center';
-    body = ctx.logo ? <img src={ctx.logo} alt="" style={{ objectPosition: pos }} /> : design ? <div className="tb-val ph">Logo — upload it in Basic Customization</div> : null;
+    body = src ? <img src={src} alt="" style={{ objectPosition: pos }} /> : design ? <div className="tb-val ph">{b.kind === 'logo' ? 'Logo — upload it in Basic Customization' : 'Image — choose a picture'}</div> : null;
   } else if (b.kind === 'sign') {
     body = (
       <div className="tb-sign" style={{ borderTopColor: color || '#000' }}>
@@ -222,13 +225,13 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
     body = <div className="tb-line" style={{ borderTopColor: color || '#000', borderTopWidth: b.bold ? '0.7mm' : '0.3mm' }} />;
   }
 
-  if (!design && (b.hideEmpty || b.kind === 'logo' || (flow && b.kind === 'field' && b.field !== 'totals')) && empty) return null;
+  if (!design && (b.hideEmpty || pic || (flow && b.kind === 'field' && b.field !== 'totals')) && empty) return null;
 
   // on a roll the box keeps its width (as a share of the paper) but its height follows the text
   // (a signature's room to sign is the space above its line, so it needs no height of its own below the text)
-  const fixedH = b.kind === 'line' || b.kind === 'logo';
+  const fixedH = b.kind === 'line' || pic;
   const place = flow
-    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: b.kind === 'logo' ? b.h + 'mm' : undefined }
+    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: pic ? b.h + 'mm' : undefined }
     : { left: b.x + 'mm', top: b.y + 'mm', width: b.w + 'mm', height: b.h + 'mm' };
   const style = {
     ...place,
