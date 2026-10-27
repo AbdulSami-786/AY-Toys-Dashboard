@@ -190,7 +190,10 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
         <div className="tb-totals">
           {ctx.totals.map((r) => (
             <div key={r.field} className={'tt' + (r.strong ? ' strong' : '')}>
-              <span>{r.label || fieldLabel(tpl, r.field)}</span>
+              <span>
+                {r.label || fieldLabel(tpl, r.field)}
+                {r.qty && <span className="tt-qty"> · Qty {r.qty}</span>}
+              </span>
               <span>{r.value}</span>
             </div>
           ))}
@@ -263,6 +266,9 @@ export function PageSheet({ template, ctx, scale = 1, design, className = '' }) 
 // fit a page into a box `px` wide
 export const fitScale = (template, px) => Math.min(1.25, px / (pageSize(template.page).w * PX_PER_MM));
 
+// longest single receipt slip (mm); anything longer goes on to the next slip
+const ROLL_MAX_MM = 300;
+
 // @page rule that matches the template's paper (used when printing).
 // A receipt roll gets a page exactly as long as the printed receipt (measured), so the printer neither cuts the end off
 // nor feeds blank paper.
@@ -277,6 +283,8 @@ export function PageRule({ template, lines = 0 }) {
     if (el) setMeasured(Math.ceil(el.getBoundingClientRect().height / PX_PER_MM));
   }, [roll, template, lines]);
   const guess = 2 * m + template.headerHeight + template.footerHeight + 16 + lines * 10;
-  const len = roll ? Math.min(3000, (measured > 0 ? measured + 2 * m + 4 : guess) + 2) : h;
+  // A very long bill is not squeezed onto one giant slip (the printer would shrink it to fit): the page length is capped
+  // and the item lines continue on the next slip, whole rows only, with the column headings repeated.
+  const len = roll ? Math.min(ROLL_MAX_MM, (measured > 0 ? measured + 2 * m + 4 : guess) + 2) : h;
   return <style>{`@media print { @page { size: ${w}mm ${Math.round(len)}mm; margin: ${m}mm; } }`}</style>;
 }

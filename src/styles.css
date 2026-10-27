@@ -2790,6 +2790,18 @@ table.tdoc-lines {
 .tdoc.roll .tb-totals .tt span:last-child {
   white-space: nowrap;
 }
+/* long bills continue on the next slip: rows stay whole, headings repeat */
+.tdoc.roll .tdoc-lines thead {
+  display: table-header-group;
+}
+.tdoc.roll .tdoc-lines tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.tdoc.roll .tb-totals .tt-qty {
+  font-size: 0.85em;
+  font-weight: 700;
+}
 .tdoc.roll .tdoc-lines tr.tdoc-total td {
   border-top: 0.35mm solid #000;
   font-weight: 800;

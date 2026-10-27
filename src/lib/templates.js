@@ -661,7 +661,9 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
     totals.push({ field: 'subtotal', value: money(subtotal) });
     totals.push({ field: 'tax', label: `${fieldLabelOrTax(tpl, company)} (${num(t.taxRate)}%)`, value: money(tax) });
   }
-  totals.push({ field: 'total', value: values.total, strong: true });
+  // total quantity of all item lines, shown beside "Total"
+  const qtySum = Math.round(lines.reduce((s, l) => s + (filled(l.qty) ? num(l.qty) : 0), 0) * 1000) / 1000;
+  totals.push({ field: 'total', value: values.total, strong: true, qty: qtySum > 0 ? fmtQty(qtySum) : '' });
   if (showBalance) {
     totals.push({ field: 'payments', value: values.payments });
     totals.push({ field: 'balanceDue', value: values.balanceDue, strong: true });
