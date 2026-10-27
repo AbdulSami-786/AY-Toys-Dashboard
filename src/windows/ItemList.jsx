@@ -129,17 +129,41 @@ export function ItemModal({ initial, onClose, onSaved }) {
         }}
       >
         <div className="grid4">
-          <Field label="Type">
-            <Select value={f.type} onChange={set('type')} options={ITEM_TYPES} disabled={used} />
-          </Field>
-          <Field label="Item name / number" className="span2">
+          <Field label="Name">
             <input autoFocus value={f.name} onChange={set('name')} />
-          </Field>
-          <Field label="SKU / Code">
-            <input value={f.sku} onChange={set('sku')} />
           </Field>
           <Field label="Category">
             <Combo value={f.category} allowFree onChange={set('category')} options={categories.map((c) => ({ id: c, label: c }))} placeholder="e.g. Dolls" />
+          </Field>
+          {!isDisc && (
+            <Field label="Cost price">
+              <MoneyInput value={f.cost} onChange={set('cost')} />
+            </Field>
+          )}
+          {isDisc ? (
+            <Field label="Discount %">
+              <MoneyInput value={f.percent} onChange={set('percent')} plain />
+            </Field>
+          ) : (
+            <Field label="Sale price">
+              <MoneyInput value={f.price} onChange={set('price')} />
+            </Field>
+          )}
+        </div>
+        <div className="muted small" style={{ minHeight: 18, marginTop: 4 }}>
+          {num(f.cost) > 0 && num(f.price) > 0 && (
+            <>
+              Markup {Math.round(((num(f.price) - num(f.cost)) / num(f.cost)) * 100)}% · Margin {Math.round(((num(f.price) - num(f.cost)) / num(f.price)) * 100)}%
+            </>
+          )}
+        </div>
+
+        <div className="grid4 mt">
+          <Field label="Type">
+            <Select value={f.type} onChange={set('type')} options={ITEM_TYPES} disabled={used} />
+          </Field>
+          <Field label="SKU / Code">
+            <input value={f.sku} onChange={set('sku')} />
           </Field>
           <Field label="U/M">
             <Combo value={f.uom} allowFree onChange={set('uom')} options={L.lists.uom.map((u) => ({ id: u, label: u }))} />
@@ -179,9 +203,6 @@ export function ItemModal({ initial, onClose, onSaved }) {
               <Field label="Description on purchase transactions" className="span2">
                 <input value={f.purchaseDescription} onChange={setDesc('purchaseDescription')} />
               </Field>
-              <Field label="Cost">
-                <MoneyInput value={f.cost} onChange={set('cost')} />
-              </Field>
               {inv ? (
                 <Field label="COGS account">
                   <Combo value={f.cogsAccountId} onChange={set('cogsAccountId')} options={O.accountOpts(['Cost of Goods Sold'])} />
@@ -212,15 +233,6 @@ export function ItemModal({ initial, onClose, onSaved }) {
               </label>
             )}
           </div>
-          {isDisc ? (
-            <Field label="Discount %">
-              <MoneyInput value={f.percent} onChange={set('percent')} plain />
-            </Field>
-          ) : (
-            <Field label="Sales price">
-              <MoneyInput value={f.price} onChange={set('price')} />
-            </Field>
-          )}
           <Field label="Income account">
             <Combo
               value={f.incomeAccountId}
@@ -233,11 +245,6 @@ export function ItemModal({ initial, onClose, onSaved }) {
         <label className="check mt">
           <input type="checkbox" checked={!!f.taxable} onChange={set('taxable')} /> Taxable item
         </label>
-        {num(f.cost) > 0 && num(f.price) > 0 && (
-          <span className="muted small" style={{ marginLeft: 16 }}>
-            Markup {Math.round(((num(f.price) - num(f.cost)) / num(f.cost)) * 100)}% · Margin {Math.round(((num(f.price) - num(f.cost)) / num(f.price)) * 100)}%
-          </span>
-        )}
 
         {inv && (
           <>

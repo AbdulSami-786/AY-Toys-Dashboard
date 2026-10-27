@@ -3777,11 +3777,32 @@ table.rpt.fixed td {
   white-space: nowrap;
 }
 .st-kpis {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1px;
   background: var(--border);
   border-bottom: 1px solid var(--border);
+}
+/* eye button in the corner of a shop card: shows or hides its figures */
+.st-eye {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.st-eye:hover {
+  background: var(--surface-2);
+  color: var(--text);
 }
 .st-kpi {
   display: flex;
@@ -3817,6 +3838,10 @@ table.rpt.fixed td {
 }
 .st-kpi.loss .v {
   color: var(--danger);
+}
+.st-kpi .v.masked {
+  color: var(--muted);
+  letter-spacing: 0.12em;
 }
 .st-skel {
   display: inline-block;
@@ -4097,6 +4122,12 @@ table.rpt.fixed td {
   }
   .st-kpi .v {
     font-size: 19px;
+  }
+  .st-eye {
+    width: 38px;
+    height: 38px;
+    top: 4px;
+    right: 6px;
   }
   .st-card-foot .btn {
     height: 44px;

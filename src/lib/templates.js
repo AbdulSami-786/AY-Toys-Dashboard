@@ -405,7 +405,8 @@ export function standardTemplate(formType) {
       tableHeader: 'shade', // shade | accent | plain
       borders: 'grid', // grid | columns | rows | none
       zebra: false,
-      footerAtBottom: true,
+      // off: the page is only as long as the bill (footer right under the items); on: the table stretches so the footer sits at the bottom of the page
+      fillPage: false,
       stamps: true,
       wordsCurrency: 'Rupees',
       wordsFraction: 'Paisa',
@@ -665,9 +666,10 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
     totals.push({ field: 'subtotal', value: money(subtotal) });
     totals.push({ field: 'tax', label: `${fieldLabelOrTax(tpl, company)} (${num(t.taxRate)}%)`, value: money(tax) });
   }
-  // total quantity of all item lines, shown beside "Total"
+  // total quantity of all item lines: printed under the Qty column when the template has one (see TemplateDoc), else beside "Total"
   const qtySum = Math.round(lines.reduce((s, l) => s + (filled(l.qty) ? num(l.qty) : 0), 0) * 1000) / 1000;
-  totals.push({ field: 'total', value: values.total, strong: true, qty: qtySum > 0 ? fmtQty(qtySum) : '' });
+  const qtyColumn = !!tpl?.columns?.some((c) => c.print && c.key === 'qty');
+  totals.push({ field: 'total', value: values.total, strong: true, qty: qtySum > 0 && !qtyColumn ? fmtQty(qtySum) : '' });
   if (showBalance) {
     totals.push({ field: 'payments', value: values.payments });
     totals.push({ field: 'balanceDue', value: values.balanceDue, strong: true });
@@ -690,6 +692,7 @@ export function buildDocContext({ txn: t, company, L, ledger, template }) {
       amount: money(l.amount),
     })),
     totals,
+    qtySum,
     // carton invoices: total cartons, loose pieces and quantity, shown as the last row of the table
     lineTotals: cartonTotals(lines),
     stamp: t.voided ? 'VOID' : paid ? 'PAID' : '',

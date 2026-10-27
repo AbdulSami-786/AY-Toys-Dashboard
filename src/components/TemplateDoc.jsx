@@ -27,15 +27,20 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const totalW = cols.reduce((s, c) => s + Math.max(1, colW(c)), 0) || 1;
   const pct = (c) => (Math.max(1, colW(c)) / totalW) * 100 + '%';
   const uomInQty = !cols.some((c) => c.key === 'uom' || c.key === 'ctn');
-  const bodyMin = !flow && st.footerAtBottom ? Math.max(15, H - tpl.headerHeight - tpl.footerHeight - 4) : 0;
+  // the table only stretches to the footer when the template asks to fill the page; otherwise a short bill prints short
+  const bodyMin = !flow && st.fillPage ? Math.max(15, H - tpl.headerHeight - tpl.footerHeight - 4) : 0;
   // "Total" goes in the column just before the first quantity column
   const totalLabelAt = Math.max(0, cols.findIndex((c) => QTY_KEYS.includes(c.key)) - 1);
   const framed = st.borders === 'grid' || st.borders === 'columns';
 
   // carton invoices show the quantities once, on the Total row, not on every item
-  const totalRow = !!ctx.lineTotals && cols.some((c) => c.key === 'ctn' || c.key === 'pcs');
+  const carton = !!ctx.lineTotals && cols.some((c) => c.key === 'ctn' || c.key === 'pcs');
+  // every other bill gets a "Total qty" row, so the total quantity sits right under the Qty column
+  const qtyRow = !carton && ctx.qtySum > 0 && cols.some((c) => c.key === 'qty');
+  const totalRow = carton || qtyRow;
+  const sums = carton ? ctx.lineTotals : { qty: ctx.qtySum };
 
-  const cell = (l, key) => (totalRow && QTY_KEYS.includes(key) ? '' : key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
+  const cell = (l, key) => (carton && QTY_KEYS.includes(key) ? '' : key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
 
   return (
     <div
@@ -73,7 +78,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
               <tr className="tdoc-total">
                 {cols.map((c, i) => (
                   <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
-                    {QTY_KEYS.includes(c.key) ? (c.key === 'pkg' ? '' : fmtQty(ctx.lineTotals[c.key])) : i === totalLabelAt ? 'Total' : ''}
+                    {QTY_KEYS.includes(c.key) ? (c.key === 'pkg' || sums[c.key] === undefined ? '' : fmtQty(sums[c.key])) : i === totalLabelAt ? (carton ? 'Total' : 'Total qty') : ''}
                   </td>
                 ))}
               </tr>
@@ -289,7 +294,9 @@ export function PageRule({ template, lines = 0 }) {
   const guess = 2 * m + template.headerHeight + template.footerHeight + 16 + lines * 10;
   // A very long bill is not squeezed onto one giant slip (the printer would shrink it to fit): the page length is capped
   // and the item lines continue on the next slip, whole rows only, with the column headings repeated.
-  const len = Math.ceil(roll ? Math.min(ROLL_MAX_MM, measured > 0 ? measured + 2 * m + 2 : guess) : h);
+  // Printing lays each row out a little taller than the screen does (about 0.1 mm a row). A slip cut to the exact measured length
+  // would push the totals onto a second, nearly empty slip, so the length gets a few mm to spare, a bit more for longer bills.
+  const len = Math.ceil(roll ? Math.min(ROLL_MAX_MM, measured > 0 ? measured + 2 * m + 4 + lines * 0.15 : guess) : h);
   // the desktop program prints a receipt on paper exactly this long (see PrintProvider)
   useLayoutEffect(() => {
     const root = document.getElementById('print-root');

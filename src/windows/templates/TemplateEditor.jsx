@@ -111,7 +111,7 @@ export default function TemplateEditor({ templateId, formType, draft, tab: initi
     let style = prev.style;
     if (k === 'size' && isRoll({ size: v })) {
       page = { ...page, margin: ROLL_MARGIN[v], orientation: 'portrait' };
-      style = { ...style, footerAtBottom: false, fontSize: Math.min(num(style.fontSize) || 9, 7) };
+      style = { ...style, fillPage: false, fontSize: Math.min(num(style.fontSize) || 9, 7) };
     }
     const oldW = contentSize(prev.page).w;
     const newW = contentSize(page).w;
@@ -497,7 +497,7 @@ function BasicPanel({ t, form, set, setStyle, setCo, setPage, makeDefault, setMa
           <input type="number" min={0} max={40} step={1} className="num" value={t.page.margin} onChange={(e) => setPage('margin', Math.max(0, Math.min(40, num(e.target.value))))} />
         </Field>
         <label className="check" style={{ alignSelf: 'end', paddingBottom: 6 }}>
-          <input type="checkbox" checked={!!st.footerAtBottom} onChange={(e) => setStyle('footerAtBottom', e.target.checked)} /> Keep footer at the bottom of the page
+          <input type="checkbox" checked={!!st.fillPage} onChange={(e) => setStyle('fillPage', e.target.checked)} /> Fill the whole page (footer at the bottom, even for a short bill)
         </label>
       </div>
       <button className="btn sm mt" onClick={relayout}>

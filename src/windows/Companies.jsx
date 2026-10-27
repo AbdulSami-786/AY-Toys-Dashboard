@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Building2, Trash2, Pencil, LogIn, RefreshCw, Cloud, CloudOff, AlertCircle, ChevronRight, Store, LayoutGrid, BarChart3 } from 'lucide-react';
+import { Plus, Building2, Trash2, Pencil, LogIn, RefreshCw, Cloud, CloudOff, AlertCircle, ChevronRight, Store, LayoutGrid, BarChart3, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../store/store';
 import { SHEET, SHEET_READY } from '../config';
 import { sheets } from '../store/sheets';
@@ -196,7 +196,10 @@ export default function Companies({ fullscreen, create, onOpen }) {
   const [period, setPeriodState] = useState(() => recall('ay.startPeriod', 'month'));
   const [report, setReportState] = useState(() => recall('ay.startReport', 'pl'));
   const [nonce, setNonce] = useState(0);
-  const setTab = (v) => (setTabState(v), remember('ay.startTab', v));
+  // shop cards open with their figures hidden (****); the eye button on a card shows or hides that shop's figures
+  const [revealed, setRevealed] = useState({});
+  const toggleFigures = (id) => setRevealed((r) => ({ ...r, [id]: !r[id] }));
+  const setTab =(v) => (setTabState(v), remember('ay.startTab', v));
   const setPeriod = (v) => (setPeriodState(v), remember('ay.startPeriod', v));
   const setReport = (v) => (setReportState(v), remember('ay.startReport', v));
   const books = useShopBooks(companies, company, data, ledger, nonce);
@@ -282,6 +285,8 @@ export default function Companies({ fullscreen, create, onOpen }) {
             f={figuresOk ? figures[c.id] : null}
             current={company?.id === c.id}
             period={period}
+            show={!!revealed[c.id]}
+            onToggle={() => toggleFigures(c.id)}
             onOpen={() => open(c)}
             onEdit={perm.admin ? () => setModal({ initial: c }) : null}
             onDelete={perm.admin ? () => remove(c) : null}
@@ -381,14 +386,15 @@ export default function Companies({ fullscreen, create, onOpen }) {
   );
 }
 
-function ShopCard({ c, f, current, period, onOpen, onEdit, onDelete }) {
+function ShopCard({ c, f, current, period, show, onToggle, onOpen, onEdit, onDelete }) {
   const cur = c.currency || 'Rs';
   const color = c.theme?.primary || '#2ca01c';
   const ready = f && (f.source === 'here' || f.source === 'sheet');
+  const masked = ready && !show;
   const tile = (label, v, cls = '', sub = '') => (
     <div className={'st-kpi ' + cls}>
       <span className="k">{label}</span>
-      <span className="v">{ready ? amount(v, cur) : f?.source === 'loading' ? <span className="st-skel" /> : '—'}</span>
+      <span className={'v' + (masked ? ' masked' : '')}>{ready ? (show ? amount(v, cur) : '****') : f?.source === 'loading' ? <span className="st-skel" /> : '—'}</span>
       {sub && <span className="s">{sub}</span>}
     </div>
   );
@@ -405,10 +411,16 @@ function ShopCard({ c, f, current, period, onOpen, onEdit, onDelete }) {
       </button>
       {f && (
       <div className="st-kpis">
-        {tile('Sales · ' + periodLabel, f?.sales, 'sales', ready && f.salesCount !== undefined ? `${f.salesCount} sale${f.salesCount === 1 ? '' : 's'}` : '')}
+        <button type="button" className="st-eye" onClick={onToggle} aria-pressed={show} aria-label={show ? 'Hide figures' : 'Show figures'} title={show ? 'Hide figures' : 'Show figures'}>
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+        {tile('Sales · ' + periodLabel, f?.sales, 'sales', show && ready && f.salesCount !== undefined ? `${f.salesCount} sale${f.salesCount === 1 ? '' : 's'}` : '')}
         {tile('Expenses', f?.expenses, 'exp')}
-        {tile('Net profit', f?.netProfit, ready && f.netProfit < 0 ? 'loss' : 'profit')}
-        {tile('Cash in hand', f?.cashInHand, 'cash', ready && f.notDeposited ? `incl. ${amount(f.notDeposited, cur)} not deposited` : 'today')}
+        {/* green / red would give away profit or loss, so the colour only shows with the figures */}
+        {tile('Net profit', f?.netProfit, !show ? '' : ready && f.netProfit < 0 ? 'loss' : 'profit')}
+        {tile('Cash in hand', f?.cashInHand, 'cash', show && ready && f.notDeposited ? `incl. ${amount(f.notDeposited, cur)} not deposited` : 'today')}
+        {tile('Accounts receivable', f?.receivables, 'recv', 'customers owe you')}
+        {tile('Accounts payable', f?.payables, 'pay', 'you owe vendors')}
       </div>
       )}
       {f?.source === 'sheet' && <div className="st-src">From the Google Sheet · updated {new Date(f.at).toLocaleString()}</div>}
