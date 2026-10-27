@@ -19,6 +19,10 @@ export const fromSheet = (r) => {
 
 export const newer = (a, b) => String(a?.updatedAt || a?.createdAt || '') > String(b?.updatedAt || b?.createdAt || '');
 
+// The time to put on a change made now: always later than the copies it replaces (`prev` = their stamps), even when
+// this computer's clock is behind the one that wrote them — otherwise the sync would take the new change for the older one.
+export const stampAfter = (...prev) => new Date(Math.max(Date.now(), ...prev.map((p) => (Date.parse(p) || 0) + 1))).toISOString();
+
 const stamp = (x) => String(x?.updatedAt || '');
 const templatesSig = (c) =>
   JSON.stringify([

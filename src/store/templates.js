@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useStore } from './store';
+import { stampAfter } from './companies';
 import { allTemplates, compactTemplate, defaultTemplateId, getTemplate, isStdId } from '../lib/templates';
 
 // Templates are stored on the company record (company.templates / company.templateDefaults),
@@ -7,13 +8,17 @@ import { allTemplates, compactTemplate, defaultTemplateId, getTemplate, isStdId 
 // Google Sheets cells hold at most 50,000 characters.
 export const SHEET_CELL_LIMIT = 50000;
 
+// Saved copies are compared by their stamp when computers sync (see mergeCompanies): a save is stamped later than the
+// copy it replaces, and than any "deleted" mark for it, so it wins even if this computer's clock is behind another's.
+const stampFor = (company, tpl) => stampAfter(tpl.updatedAt, (company.templates || []).find((t) => t.id === tpl.id)?.updatedAt, company.templatesRemoved?.[tpl.id]);
+
 export function useTemplates() {
   const { company, updateCompany } = useStore();
   const list = useMemo(() => allTemplates(company), [company]);
 
   const save = useCallback(
     (tpl) => {
-      const rec = compactTemplate({ ...tpl, updatedAt: new Date().toISOString() });
+      const rec = compactTemplate({ ...tpl, updatedAt: stampFor(company, tpl) });
       const others = (company.templates || []).filter((t) => t.id !== rec.id);
       const templates = [...others, rec];
       updateCompany(company.id, { templates });
@@ -25,8 +30,7 @@ export function useTemplates() {
   // save several at once (import): one company update, so none overwrites another
   const saveMany = useCallback(
     (tpls) => {
-      const now = new Date().toISOString();
-      const recs = tpls.map((tpl) => compactTemplate({ ...tpl, updatedAt: now }));
+      const recs = tpls.map((tpl) => compactTemplate({ ...tpl, updatedAt: stampFor(company, tpl) }));
       const ids = new Set(recs.map((r) => r.id));
       const templates = [...(company.templates || []).filter((t) => !ids.has(t.id)), ...recs];
       updateCompany(company.id, { templates });
@@ -42,7 +46,7 @@ export function useTemplates() {
       const defs = { ...(company.templateDefaults || {}) };
       Object.keys(defs).forEach((k) => defs[k] === id && delete defs[k]);
       // remembered, so another computer's older copy can't bring it back (see mergeCompanies)
-      const templatesRemoved = { ...(company.templatesRemoved || {}), [id]: new Date().toISOString() };
+      const templatesRemoved = { ...(company.templatesRemoved || {}), [id]: stampFor(company, { id }) };
       updateCompany(company.id, { templates, templateDefaults: defs, templatesRemoved });
     },
     [company, updateCompany],

@@ -4,7 +4,7 @@ import { uid } from '../lib/format';
 import { emptyData, newCompany, sampleData, defaultAccounts } from './defaults';
 import { sheets, TABLES } from './sheets';
 import { SHEET, SHEET_READY } from '../config';
-import { mergeCompanies, newer, sameTemplates, fromSheet } from './companies';
+import { mergeCompanies, newer, sameTemplates, fromSheet, stampAfter } from './companies';
 import { isShared, sharePayload, shareIndex } from '../lib/share';
 import { getData, setData, delData, migrateAll } from './storage';
 import { isWriter } from './tabLock';
@@ -503,7 +503,7 @@ export function StoreProvider({ children }) {
       setCompanies((list) =>
         list.map((c) => {
           if (c.id !== id) return c;
-          const next = { ...c, ...patch, updatedAt: new Date().toISOString() };
+          const next = { ...c, ...patch, updatedAt: stampAfter(c.updatedAt) };
           pushCompany(next);
           return next;
         }),
