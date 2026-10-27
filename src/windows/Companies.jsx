@@ -203,7 +203,8 @@ export default function Companies({ fullscreen, create, onOpen }) {
   const remote = useSheetSummaries(nonce);
 
   const save = (f) => {
-    const { sample, ...info } = f;
+    // settings saved by their own screens are left out, so this dialog's older copy doesn't overwrite them
+    const { sample, templates, templateDefaults, templatesRemoved, lists, logo, shortcuts, memorizedReports, ...info } = f;
     if (modal.isNew) {
       addCompany(info, { sample });
       dlg.toast(`Shop "${f.name}" created`);

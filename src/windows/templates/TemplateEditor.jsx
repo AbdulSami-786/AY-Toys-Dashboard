@@ -111,7 +111,7 @@ export default function TemplateEditor({ templateId, formType, draft, tab: initi
     let style = prev.style;
     if (k === 'size' && isRoll({ size: v })) {
       page = { ...page, margin: ROLL_MARGIN[v], orientation: 'portrait' };
-      style = { ...style, footerAtBottom: false, fontSize: Math.min(num(style.fontSize) || 9, 8) };
+      style = { ...style, footerAtBottom: false, fontSize: Math.min(num(style.fontSize) || 9, 7) };
     }
     const oldW = contentSize(prev.page).w;
     const newW = contentSize(page).w;

@@ -1,7 +1,7 @@
 // AY Toys desktop app (Electron). Shows the built app (dist/) in its own window, from a private app:// address,
 // so it starts without internet and keeps its books in one place on this computer. Syncing with the Google Sheet
 // is done by the app itself, exactly as in a browser.
-const { app, BrowserWindow, Menu, protocol, net, shell, screen, session } = require('electron');
+const { app, BrowserWindow, Menu, protocol, net, shell, screen, session, ipcMain } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
@@ -77,7 +77,7 @@ function createWindow() {
     backgroundColor: '#e9edf1',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: !app.isPackaged || process.env.AY_DEVTOOLS === '1' },
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false, devTools: !app.isPackaged || process.env.AY_DEVTOOLS === '1' },
   });
   win.removeMenu();
   if (st.maximized) win.maximize();
@@ -127,6 +127,24 @@ function createWindow() {
   });
   win.loadURL(`${SCHEME}://${HOST}/`);
 }
+
+// Print on paper exactly the size the document asks for (page = { w, h } in mm). window.print() would use the
+// printer's own paper length (often 297 mm): blank paper after a short receipt, or a long one shrunk to fit.
+ipcMain.handle('ay:print', (e, page) => {
+  if (!win || e.sender !== win.webContents) return { ok: false, reason: 'Not this window' };
+  const w = Number(page?.w);
+  const h = Number(page?.h);
+  const opts = { silent: false, printBackground: true };
+  if (w >= 20 && w <= 2000 && h >= 20 && h <= 5000) opts.pageSize = { width: Math.round(w * 1000), height: Math.round(h * 1000) };
+  else opts.usePrinterDefaultPageSize = true;
+  return new Promise((resolve) => {
+    try {
+      e.sender.print(opts, (ok, reason) => resolve({ ok, reason: reason || '' }));
+    } catch (err) {
+      resolve({ ok: false, reason: String(err?.message || err) });
+    }
+  });
+});
 
 app.on('second-instance', () => {
   if (!win) return;

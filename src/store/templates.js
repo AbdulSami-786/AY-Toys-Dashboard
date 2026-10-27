@@ -41,7 +41,9 @@ export function useTemplates() {
       const templates = (company.templates || []).filter((t) => t.id !== id);
       const defs = { ...(company.templateDefaults || {}) };
       Object.keys(defs).forEach((k) => defs[k] === id && delete defs[k]);
-      updateCompany(company.id, { templates, templateDefaults: defs });
+      // remembered, so another computer's older copy can't bring it back (see mergeCompanies)
+      const templatesRemoved = { ...(company.templatesRemoved || {}), [id]: new Date().toISOString() };
+      updateCompany(company.id, { templates, templateDefaults: defs, templatesRemoved });
     },
     [company, updateCompany],
   );

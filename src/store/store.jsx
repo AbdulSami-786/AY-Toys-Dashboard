@@ -4,7 +4,7 @@ import { uid } from '../lib/format';
 import { emptyData, newCompany, sampleData, defaultAccounts } from './defaults';
 import { sheets, TABLES } from './sheets';
 import { SHEET, SHEET_READY } from '../config';
-import { mergeCompanies, newer } from './companies';
+import { mergeCompanies, newer, sameTemplates, fromSheet } from './companies';
 import { isShared, sharePayload, shareIndex } from '../lib/share';
 import { getData, setData, delData, migrateAll } from './storage';
 import { isWriter } from './tabLock';
@@ -455,18 +455,32 @@ export function StoreProvider({ children }) {
   );
 
   // ----- companies -----
-  const pushCompany = useCallback(
-    async (co) => {
-      if (!SHEET_READY) return;
-      try {
-        await sheets.saveCompany(SHEET, co);
-      } catch (e) {
-        const off = isNetworkError(e);
-        setSync((s) => ({ ...s, status: off ? 'offline' : 'error', message: off ? OFFLINE_MESSAGE : e.message }));
-      }
-    },
-    [],
-  );
+  // One upload of a company at a time, newest last: two quick saves can't reach the sheet in the wrong order and
+  // leave the older copy there. A copy still waiting is replaced by a newer one.
+  const companyPushRef = useRef({}); // companyId → { next: copy waiting to go up, running: promise }
+  const pushCompany = useCallback((co) => {
+    if (!SHEET_READY) return Promise.resolve();
+    const slot = (companyPushRef.current[co.id] ||= { next: null, running: null });
+    slot.next = co;
+    if (!slot.running)
+      slot.running = (async () => {
+        try {
+          while (slot.next) {
+            const send = slot.next;
+            slot.next = null;
+            try {
+              await sheets.saveCompany(SHEET, send);
+            } catch (e) {
+              const off = isNetworkError(e);
+              setSync((s) => ({ ...s, status: off ? 'offline' : 'error', message: off ? OFFLINE_MESSAGE : e.message }));
+            }
+          }
+        } finally {
+          slot.running = null;
+        }
+      })();
+    return slot.running;
+  }, []);
 
   const addCompany = useCallback(
     (info, { sample = false } = {}) => {
@@ -607,7 +621,9 @@ export function StoreProvider({ children }) {
       const remoteCos = (await sheets.listCompanies(url)).filter((r) => !gone.has(String(r.id)));
       const remoteMe = remoteCos.find((c) => String(c.id) === company.id);
       setCompanies((list) => mergeCompanies(list, remoteCos));
-      if (!remoteMe || newer(company, remoteMe)) await pushCompany(company);
+      // this computer's latest copy (a template saved while the download ran is in it), not the one this sync started with
+      const me = mergeCompanies(companiesRef.current, remoteCos).find((c) => c.id === company.id);
+      if (me && (!remoteMe || newer(me, remoteMe) || !sameTemplates(me, fromSheet(remoteMe)))) await pushCompany(me);
       const upErr = await flushAll(company.id);
       if (upErr) throw new Error('Could not upload the changes made on this computer: ' + upErr);
       const remote = await sheets.pull(url, company.code);

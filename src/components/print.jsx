@@ -16,8 +16,17 @@ export function PrintProvider({ children }) {
     return () => window.removeEventListener('afterprint', after);
   }, []);
   const print = useCallback((node) => {
+    const root = document.getElementById('print-root');
+    if (root) delete root.dataset.page;
     setContent(node);
-    setTimeout(() => window.print(), 250); // after the page length has been measured (PageRule)
+    // after the page length has been measured (PageRule)
+    setTimeout(() => {
+      const [w, h] = (root?.dataset.page || '').split('x').map(Number);
+      // a receipt in the desktop program: printed on paper exactly as long as the bill, not the printer's own paper
+      // length (blank paper after a short bill); window.print() can't choose the paper
+      if (window.ayDesktop?.print && w && h) window.ayDesktop.print({ w, h }).finally(() => setContent(null));
+      else window.print();
+    }, 250);
   }, []);
   const root = document.getElementById('print-root');
   return (

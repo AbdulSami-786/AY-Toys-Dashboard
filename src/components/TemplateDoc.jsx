@@ -225,7 +225,8 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
   if (!design && (b.hideEmpty || b.kind === 'logo' || (flow && b.kind === 'field' && b.field !== 'totals')) && empty) return null;
 
   // on a roll the box keeps its width (as a share of the paper) but its height follows the text
-  const fixedH = b.kind === 'sign' || b.kind === 'line' || b.kind === 'logo';
+  // (a signature's room to sign is the space above its line, so it needs no height of its own below the text)
+  const fixedH = b.kind === 'line' || b.kind === 'logo';
   const place = flow
     ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: b.kind === 'logo' ? b.h + 'mm' : undefined }
     : { left: b.x + 'mm', top: b.y + 'mm', width: b.w + 'mm', height: b.h + 'mm' };
@@ -285,6 +286,11 @@ export function PageRule({ template, lines = 0 }) {
   const guess = 2 * m + template.headerHeight + template.footerHeight + 16 + lines * 10;
   // A very long bill is not squeezed onto one giant slip (the printer would shrink it to fit): the page length is capped
   // and the item lines continue on the next slip, whole rows only, with the column headings repeated.
-  const len = roll ? Math.min(ROLL_MAX_MM, (measured > 0 ? measured + 2 * m + 4 : guess) + 2) : h;
-  return <style>{`@media print { @page { size: ${w}mm ${Math.round(len)}mm; margin: ${m}mm; } }`}</style>;
+  const len = Math.ceil(roll ? Math.min(ROLL_MAX_MM, measured > 0 ? measured + 2 * m + 2 : guess) : h);
+  // the desktop program prints a receipt on paper exactly this long (see PrintProvider)
+  useLayoutEffect(() => {
+    const root = document.getElementById('print-root');
+    if (root && roll) root.dataset.page = `${w}x${len}`;
+  }, [roll, w, len]);
+  return <style>{`@media print { @page { size: ${w}mm ${len}mm; margin: ${m}mm; } }`}</style>;
 }
