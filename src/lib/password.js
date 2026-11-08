@@ -13,7 +13,7 @@ export function newSalt() {
 }
 
 export async function hashPassword(password, salt, rounds = PBKDF2_ROUNDS) {
-  if (!crypto?.subtle) throw new Error('This window cannot check passwords. Open AY Toys from the desktop program or an https:// address.');
+  if (!crypto?.subtle) throw new Error('This window cannot check passwords. Open CAS World Wide from the desktop program or an https:// address.');
   const key = await crypto.subtle.importKey('raw', enc.encode(String(password)), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: rounds }, key, 256);
   return hex(bits);

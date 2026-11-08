@@ -10,6 +10,7 @@ import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
 import { StdRibbon, FormActions, useTxnController, blankLine, ensureTrailing, SideCard, TB, TemplatePicker, useItemNotFound, focusLineAfterItem } from './common';
 import { useFormTemplate } from '../../store/templates';
+import { useTxnFile } from './TxnFile';
 import { NameCombo } from '../NameModals';
 import { ItemModal } from '../ItemList';
 import { salesTotals, txnTotal } from '../../lib/ledger';
@@ -337,8 +338,47 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
     nav.open('invoice', { fromId: id, n: Date.now() });
   };
 
+  // Export this invoice to Excel / fill it from an Excel or CSV file (same layout as the Invoices import template)
+  const txnFile = useTxnFile({
+    type,
+    label: meta.title.replace(/\s+/g, '_'),
+    canImport: !f.voided,
+    getDoc: () => ({
+      num: f.num,
+      date: f.date,
+      time: f.time,
+      party: L.nameOf(f.customerId),
+      terms: f.terms,
+      dueDate: f.dueDate,
+      po: f.poNumber,
+      taxRate: f.taxRate,
+      memo: f.memo,
+      lines: f.lines
+        .filter((l) => !isEmptyLine(l) && L.itemMap.get(l.itemId) && L.itemMap.get(l.itemId).type !== 'Discount')
+        .map((l) => ({ item: L.itemMap.get(l.itemId).name, description: l.description, qty: l.qty, price: l.rate })),
+    }),
+    hasContent: () => !!f.customerId || f.lines.some((l) => !isEmptyLine(l)),
+    // the form keeps its own number; customer, dates, terms and lines come from the file (nothing is saved yet)
+    applyRec: (rec) =>
+      setF((x) => {
+        const c = L.customerMap.get(rec.customerId);
+        let n = customerDefaults({ ...x, date: rec.date, time: rec.time || x.time, poNumber: rec.poNumber || x.poNumber, memo: rec.memo || x.memo, taxRate: num(rec.taxRate) || x.taxRate }, rec.customerId);
+        if (rec.terms) n = { ...n, terms: rec.terms, dueDate: type === 'estimate' ? n.dueDate : rec.dueDate || dueFromTerms(n.date, rec.terms) };
+        n.lines = ensureTrailing(
+          rec.lines.map((l) => {
+            const it = L.itemMap.get(l.itemId);
+            return withCartons({ ...blankLine(), key: Math.random().toString(36).slice(2), itemId: l.itemId, description: l.description, qty: l.qty, uom: l.uom, rate: l.rate, amount: l.amount, taxable: !!(it?.taxable && c?.taxable), pkg: num(it?.pkg) || '', ctn: '', pcs: l.qty });
+          }),
+          blankLine,
+          isEmptyLine,
+        );
+        return n;
+      }),
+  });
+
   const extra = (
     <>
+      {txnFile.buttons}
       {type === 'invoice' && (
         <TB icon={Wallet} label="Receive Pmt" disabled={ctl.isNew || !open} onClick={() => nav.open('payment', { prefill: { customerId: f.customerId, invoiceId: f.id } })} />
       )}

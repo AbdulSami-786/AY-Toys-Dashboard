@@ -1,10 +1,10 @@
 {
   "name": "ay-toys-dashboard",
-  "productName": "AY Toys",
+  "productName": "CAS World Wide",
   "private": true,
-  "version": "1.15.0",
-  "description": "AY Toys — QuickBooks-style wholesale accounting. Works offline, syncs with Google Sheets.",
-  "author": "AY Toys",
+  "version": "1.16.0",
+  "description": "CAS World Wide — QuickBooks-style wholesale accounting. Works offline, syncs with Google Sheets.",
+  "author": "CAS World Wide",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -27,8 +27,8 @@
   },
   "build": {
     "appId": "com.aytoys.accounting",
-    "productName": "AY Toys",
-    "copyright": "AY Toys",
+    "productName": "CAS World Wide",
+    "copyright": "CAS World Wide",
     "directories": {
       "output": "release",
       "buildResources": "electron"
@@ -54,13 +54,13 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "AY Toys",
-      "uninstallDisplayName": "AY Toys",
+      "shortcutName": "CAS World Wide",
+      "uninstallDisplayName": "CAS World Wide",
       "deleteAppDataOnUninstall": false,
-      "artifactName": "AY Toys Setup ${version}.${ext}"
+      "artifactName": "CAS World Wide Setup ${version}.${ext}"
     },
     "portable": {
-      "artifactName": "AY Toys ${version} Portable.${ext}"
+      "artifactName": "CAS World Wide ${version} Portable.${ext}"
     }
   }
 }

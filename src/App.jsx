@@ -17,6 +17,7 @@ import { downloadFile } from './lib/format';
 import { backupProblem } from './lib/importData';
 import { fmtDate, today } from './lib/dates';
 import { installEnterNav } from './lib/enterNav';
+import BrandLogo from './components/BrandLogo';
 
 // With more than one shop, every new session starts on the shop screen (figures of each shop, all-shop reports).
 const PICKED = 'ay.shopPicked';
@@ -364,8 +365,8 @@ function Shell() {
           <Menu size={20} />
         </button>
         <div className="brand">
-          <div className="brand-logo">AY</div>
-          <span>AY Toys</span>
+          <BrandLogo />
+          <span>CAS World Wide</span>
           <span className="brand-sub">Enterprise · Wholesale</span>
         </div>
         <button className="co-switch" onClick={() => open('companies')} title="Switch company (Ctrl+O)">

@@ -5,6 +5,7 @@ import { useUsers } from '../store/users';
 import { useFingerprintSupport } from '../lib/fingerprint';
 import { SHEET_READY } from '../config';
 import { MIN_PASSWORD } from '../lib/password';
+import BrandLogo from '../components/BrandLogo';
 
 function PasswordInput({ value, onChange, autoFocus, id, placeholder, autoComplete = 'current-password' }) {
   const [show, setShow] = useState(false);
@@ -23,7 +24,7 @@ function Screen({ icon: Icon, title, sub, children }) {
     <div className="welcome login-screen">
       <div className="welcome-card login-card">
         <div className="welcome-head">
-          <div className="brand-logo">AY</div>
+          <BrandLogo />
           <div>
             <h1>{title}</h1>
             {sub && <p>{sub}</p>}
@@ -135,7 +136,7 @@ function Login() {
     }
   };
   return (
-    <Screen icon={Lock} title="AY Toys" sub="Log in to continue.">
+    <Screen icon={Lock} title="CAS World Wide" sub="Log in to continue.">
       <form className="login-form narrow" onSubmit={submit}>
         <label className="lf">
           Username
@@ -243,7 +244,7 @@ export default function UserGate({ children }) {
     // a new computer must first learn the users of the Google Sheet, or anyone could make themselves admin
     if (SHEET_READY && remote.status === 'loading')
       return (
-        <Screen title="AY Toys" sub="Getting the users from your Google Sheet…">
+        <Screen title="CAS World Wide" sub="Getting the users from your Google Sheet…">
           <p className="muted">
             <RefreshCw size={14} className="spin" style={{ verticalAlign: -2 }} /> One moment.
           </p>
@@ -252,7 +253,7 @@ export default function UserGate({ children }) {
     if (SHEET_READY && remote.status === 'error' && !users.length)
       return (
         <Screen icon={CloudOff} title="Connect to the internet once" sub="This computer has not met your users yet.">
-          <p>AY Toys downloads the users from your Google Sheet the first time it starts on a computer. After that it also works without internet.</p>
+          <p>CAS World Wide downloads the users from your Google Sheet the first time it starts on a computer. After that it also works without internet.</p>
           <p className="muted small">{remote.message}</p>
           <button className="btn primary" onClick={refresh}>
             <RefreshCw size={14} /> Try again

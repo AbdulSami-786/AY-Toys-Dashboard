@@ -46,7 +46,7 @@ function compact(id, report, company, dates) {
   const rows = [];
   for (const r of report.rows) {
     if (rows.length >= MAX_ROWS) {
-      rows.push({ k: 'note', l: 0, v: [`… ${report.rows.length - MAX_ROWS} more lines — open this report in AY Toys to see them all.`] });
+      rows.push({ k: 'note', l: 0, v: [`… ${report.rows.length - MAX_ROWS} more lines — open this report in CAS World Wide to see them all.`] });
       break;
     }
     const v = report.columns.map((c) => {

@@ -1,4 +1,4 @@
-# AY Toys — Wholesale Accounting
+# CAS World Wide — Wholesale Accounting
 
 A QuickBooks Enterprise–style accounting and inventory dashboard for a toy wholesale business.
 Built with **React + Vite**. Data is saved instantly in the browser and synced to **Google Sheets** through a Google Apps Script web app.
@@ -31,11 +31,11 @@ A 13-minute captioned screen recording of every feature (English + Roman Urdu ca
 | **Reports (50+)** | P&L (standard, detail, by month, prior-year comparison), Income by Customer Summary & Detail (net income per customer = income − cost of goods sold), Balance Sheet (standard, detail, comparison), Trial Balance, General Ledger, Journal, A/R & A/P aging, Customer & Vendor Balance Summary/Detail, Open Invoices, Collections, Unpaid Bills, Sales by Customer/Item/Rep, Purchases, Inventory Valuation, Stock Status, Physical Inventory Worksheet, Sales Tax, Audit Trail, list reports. **Double-click any number to QuickZoom.** Print, export to Excel (CSV), memorize. **Customize** any report (QuickBooks-style): hide, rename and reorder columns, **add new data fields** (terms, due date, P.O. number, SKU, category, phone, email… depending on the report), calculated columns (e.g. Price − Cost, margin %) and blank note columns, change the header and footer text, text size, whole-number or bracketed amounts — kept for that report, or with Memorize. |
 | **Form templates** | QuickBooks-style **Lists › Templates**: as many designs per form as you like (invoice, sales receipt, credit memo, estimate, sales order, bill, purchase order, check/voucher, bill credit, payment receipt, bill payment). **Basic Customization** (logo, company info, title, font, colours, table style, paper A4/Letter/Legal/A5/80 mm roll, margins, amount in words), **Customize Data Layout** (Screen / Print / Title for every header field, column and footer field, column order & widths, footer text, signature lines) and a drag-and-drop **Layout Designer** for the data boxes, text boxes, lines, frames, signature lines, the company logo and **Image** boxes (any picture from your computer, saved inside the template). Pick the template on each form, set a default per form, Print Preview with any template. Printed header and footer end at the last box that prints (no blank strip when boxes are taken out or left empty; untick *Cut blank space* in Basic Customization to keep letterhead room). **Lists › Customized Templates** lists everything you have customized — form templates, report settings (Customize on any report) and Excel import templates (own columns and headings) — and exports it all to one `.aycustom.json` file that you can import on another computer. |
 | **Shared party ledgers** | Give any customer or vendor a private link + password to a **view-only** copy of their ledger: every invoice / bill, payment and credit with line items, running balance, overdue status, date filter, print / PDF. Works on any phone. They can't edit or delete anything, and they only ever see their own account. |
-| **Productivity** | Multi-window tabs, **customizable icon bar** (View › Customize Shortcuts, or the gear under the icon bar: add any window or report, rename, pick icons, reorder, section headings; right-click a window tab › Add to Shortcuts — saved with the company), QuickBooks keyboard shortcuts, type-ahead lists with `<Add New>`, **Quick Add** (type a new customer or vendor name on any form and press Tab: Quick Add saves just the name, Set Up opens the full form), calculator in amount fields, memorized transactions, Find, transaction history & journal, void/delete/copy, previous/next arrows, printable invoices/bills/receipts, CSV import/export, backup & restore |
+| **Productivity** | Multi-window tabs, **customizable icon bar** (View › Customize Shortcuts, or the gear under the icon bar: add any window or report, rename, pick icons, reorder, section headings; right-click a window tab › Add to Shortcuts — saved with the company), QuickBooks keyboard shortcuts, type-ahead lists with `<Add New>`, **Quick Add** (type a new customer or vendor name on any form and press Tab: Quick Add saves just the name, Set Up opens the full form), calculator in amount fields, memorized transactions, Find, transaction history & journal, void/delete/copy, previous/next arrows, printable invoices/bills/receipts, **Export / Import on every invoice and bill form** (one document to Excel; fill the open form from an Excel / CSV file, or add many at once), CSV import/export, backup & restore |
 
 ## Users & logins (Super Admin)
 
-The first time AY Toys starts it asks to **create the Super Admin** (name, number, email, username, password). After
+The first time CAS World Wide starts it asks to **create the Super Admin** (name, number, email, username, password). After
 that everyone logs in with a username and password.
 
 **Company › Users & Permissions…** (Super Admin only — also in the user button at the top right):
@@ -59,7 +59,7 @@ Google Sheet use **AY Toys › Reset a user's password…**: type the username a
 with it and must choose a new password straight away. The **Start Here** tab lists the users (never the passwords),
 and the **SYSTEM | Users** tab is hidden.
 
-This controls what each person can do **in AY Toys**. It does not protect against someone with full access to the
+This controls what each person can do **in CAS World Wide**. It does not protect against someone with full access to the
 Windows account or the Google Sheet itself — keep those to the owner. In the installed program the developer tools
 are switched off.
 
@@ -67,10 +67,10 @@ are switched off.
 
 `npm run release` builds, in `release/` (nothing else is left there):
 
-- **AY Toys Setup 1.15.0.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
+- **CAS World Wide Setup 1.16.0.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
   Windows Settings › Apps. Installs for the current user (no admin rights).
-- **AY Toys 1.15.0 Portable.exe** — the same program as one file, runs without installing.
-- **AY Toys 1.15.0.zip** — both files in one zip, to send to another computer.
+- **CAS World Wide 1.16.0 Portable.exe** — the same program as one file, runs without installing.
+- **CAS World Wide 1.16.0.zip** — both files in one zip, to send to another computer.
 
 Change `version` in `package.json` for every new release, so the file names show it is new.
 
@@ -98,7 +98,7 @@ The installed program (above) works with or without internet:
 
 ## Shops screen (start)
 
-With more than one shop, AY Toys starts on the **shops screen** once per browser session (the shop switcher in the
+With more than one shop, CAS World Wide starts on the **shops screen** once per browser session (the shop switcher in the
 title bar, `Ctrl+O`, opens it any time). It has three tabs:
 
 - **Shops** — a card per shop with **Sales**, **Expenses**, **Net profit**, **Cash in hand**, **Accounts receivable**
@@ -144,7 +144,7 @@ Press **F1** in the app for the full list (it includes extra `Alt+Shift+…` key
 
 ## Google Sheet (one sheet for everything, set in the code)
 
-All companies live in **one Google Sheet**. Its address is written into the app, so every computer that opens AY Toys
+All companies live in **one Google Sheet**. Its address is written into the app, so every computer that opens CAS World Wide
 connects to it by itself — nothing to paste, no keys to copy between computers.
 
 **One-time setup (about 5 minutes):**
@@ -152,7 +152,7 @@ connects to it by itself — nothing to paste, no keys to copy between computers
 1. Create a Google Sheet, e.g. **AY Toys Database**.
 2. **Extensions › Apps Script**: delete the sample code, paste all of [`apps-script/Code.gs`](apps-script/Code.gs) and click **Save**.
 3. In the toolbar choose the function **`setup`** and click **Run**, then allow the permissions. It creates every tab
-   and adds a **Start Here** tab (status, companies, help). After reloading the sheet there is also an **AY Toys** menu:
+   and adds a **Start Here** tab (status, companies, help). After reloading the sheet there is also an **CAS World Wide** menu:
    *Set up / repair this sheet*, *Refresh status*.
 4. **Deploy › New deployment** → type **Web app** → *Execute as*: **Me** → *Who has access*: **Anyone** → Deploy.
 5. Copy `src/config.example.js` to `src/config.js`. Copy the Web app URL (it ends with `/exec`) and paste it into it:
@@ -203,7 +203,7 @@ who may open the books. If the URL ever leaks, make a **new deployment** (new UR
 
 ## Share a party ledger (view-only link)
 
-1. Set up the Google Sheet (above). The shared page is served by the sheet's Apps Script, so it works even if AY Toys only runs on your computer.
+1. Set up the Google Sheet (above). The shared page is served by the sheet's Apps Script, so it works even if CAS World Wide only runs on your computer.
 2. **Customer Center** or **Vendor Center** → select the party → **Share Ledger** (toolbar, balance box, right-click, or `Ctrl+Shift+L`).
 3. Keep the random password or type your own → **Create share link**.
 4. **Send on WhatsApp** or **Copy link & password**, and send it to the party.

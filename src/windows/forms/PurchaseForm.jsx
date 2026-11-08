@@ -8,6 +8,7 @@ import { usePrint, TxnPrint } from '../../components/print';
 import Combo from '../../components/Combo';
 import { gridArrowNav } from '../../components/gridnav';
 import { Field, DateInput, MoneyInput, QtyInput } from '../../components/inputs';
+import { useTxnFile } from './TxnFile';
 import { StdRibbon, FormActions, useTxnController, ensureTrailing, SideCard, TB, TemplatePicker, useItemNotFound, focusLineAfterItem } from './common';
 import { useFormTemplate } from '../../store/templates';
 import { NameCombo } from '../NameModals';
@@ -245,8 +246,37 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
     setTab('items');
   };
 
+  // Export this bill to Excel / fill it from an Excel or CSV file (same layout as the Bills import template; item lines only)
+  const txnFile = useTxnFile({
+    type,
+    label: meta.title.replace(/\s+/g, '_'),
+    canImport: !f.voided,
+    getDoc: () => ({
+      num: f.num,
+      date: f.date,
+      time: f.time,
+      party: L.nameOf(f.vendorId),
+      terms: f.terms,
+      dueDate: f.dueDate,
+      memo: f.memo,
+      lines: f.itemLines.filter((l) => !emptyItem(l) && L.itemMap.get(l.itemId)).map((l) => ({ item: L.itemMap.get(l.itemId).name, description: l.description, qty: l.qty, price: l.cost })),
+    }),
+    hasContent: () => !!f.vendorId || f.itemLines.some((l) => !emptyItem(l)),
+    applyRec: (rec) => {
+      setF((x) => {
+        let n = vendorDefaults({ ...x, date: rec.date, time: rec.time || x.time, memo: rec.memo || x.memo }, rec.vendorId);
+        if (rec.terms) n = { ...n, terms: rec.terms };
+        if (type === 'bill') n.dueDate = rec.dueDate || dueFromTerms(n.date, n.terms);
+        n.itemLines = ensureTrailing(rec.itemLines.map((l) => ({ ...blankItem(), ...l, key: k() })), blankItem, emptyItem);
+        return n;
+      });
+      setTab('items');
+    },
+  });
+
   const extra = (
     <>
+      {type !== 'check' && txnFile.buttons}
       {isPO && (
         <TB
           icon={PackageCheck}

@@ -10,7 +10,7 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('AY Toys error', error, info?.componentStack);
+    console.error('CAS World Wide error', error, info?.componentStack);
   }
 
   render() {
@@ -19,10 +19,10 @@ export default class ErrorBoundary extends Component {
     return (
       <div className="pad" role="alert" style={{ maxWidth: 560, margin: '40px auto' }}>
         <h2 style={{ marginTop: 0 }}>Something went wrong</h2>
-        <p>{this.props.whole ? 'AY Toys hit an unexpected problem.' : 'This window hit an unexpected problem.'} Your books are saved — nothing was lost.</p>
+        <p>{this.props.whole ? 'CAS World Wide hit an unexpected problem.' : 'This window hit an unexpected problem.'} Your books are saved — nothing was lost.</p>
         <p className="muted small">{String(error?.message || error)}</p>
         <button className="btn primary" onClick={this.props.whole ? () => window.location.reload() : () => this.setState({ error: null })}>
-          {this.props.whole ? 'Reload AY Toys' : 'Try again'}
+          {this.props.whole ? 'Reload CAS World Wide' : 'Try again'}
         </button>
       </div>
     );

@@ -1,5 +1,5 @@
 // Fingerprint (or Windows Hello / face / phone unlock) as a quicker way to log in and to unlock the screen.
-// It uses the computer's own WebAuthn: the fingerprint never leaves the sensor and AY Toys never sees it. What is
+// It uses the computer's own WebAuthn: the fingerprint never leaves the sensor and CAS World Wide never sees it. What is
 // kept here is only a public key, made on this computer for one user. To accept a fingerprint the app asks the
 // device to sign a fresh random challenge and checks that signature itself (it does not just trust "ok").
 // A fingerprint belongs to one user on one computer, and stops working when that user's password changes.
@@ -79,7 +79,7 @@ export async function enrollFingerprint(user) {
   const cred = await navigator.credentials
     .create({
       publicKey: {
-        rp: { name: 'AY Toys', id: rpId() },
+        rp: { name: 'CAS World Wide', id: rpId() },
         user: { id: enc.encode(user.id), name: user.username, displayName: user.name || user.username },
         challenge: crypto.getRandomValues(new Uint8Array(32)),
         pubKeyCredParams: [
@@ -94,7 +94,7 @@ export async function enrollFingerprint(user) {
     .catch(fail);
   const pub = cred?.response?.getPublicKey?.();
   const alg = cred?.response?.getPublicKeyAlgorithm?.();
-  if (!pub || (alg !== -7 && alg !== -257)) throw new Error('This computer’s fingerprint cannot be used by AY Toys.');
+  if (!pub || (alg !== -7 && alg !== -257)) throw new Error('This computer’s fingerprint cannot be used by CAS World Wide.');
   const v = all();
   v[user.id] = { id: b64(cred.rawId), pub: b64(pub), alg, bind: user.hash, at: new Date().toISOString() };
   store(v);

@@ -197,7 +197,7 @@ export function StoreProvider({ children }) {
     root.style.setProperty('--primary', t.primary || '#2ca01c');
     root.dataset.mode = t.mode || 'light';
     root.dataset.density = t.density || 'normal';
-    document.title = company ? `${company.name} - AY Toys` : 'AY Toys';
+    document.title = company ? `${company.name} - CAS World Wide` : 'CAS World Wide';
   }, [company]);
 
   const ledger = useMemo(() => (data ? buildLedger(data) : null), [data]);

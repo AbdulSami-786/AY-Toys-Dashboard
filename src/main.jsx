@@ -8,6 +8,7 @@ import { UsersProvider } from './store/users';
 import UserGate from './windows/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import './styles.css';
+import BrandLogo from './components/BrandLogo';
 
 // The web font loads in the background (not blocking, so without internet the page does not wait for it)
 {
@@ -26,9 +27,9 @@ function TabGuard({ children }) {
       <div className="welcome">
         <div className="welcome-card" style={{ maxWidth: 560 }}>
           <div className="welcome-head">
-            <div className="brand-logo">AY</div>
+            <BrandLogo />
             <div>
-              <h1>AY Toys is open in another tab</h1>
+              <h1>CAS World Wide is open in another tab</h1>
               <p>Use one tab or window at a time, so neither overwrites the other's changes.</p>
             </div>
           </div>

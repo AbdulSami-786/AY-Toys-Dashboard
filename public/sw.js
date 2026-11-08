@@ -1,9 +1,9 @@
-// AY Toys offline support: keeps a copy of the app's own files so it opens without internet.
+// CAS World Wide offline support: keeps a copy of the app's own files so it opens without internet.
 // The books themselves are kept in the browser database (src/store/storage.js); requests to the
 // Google Sheet and to other sites always go to the network and are never stored here.
 
-const CACHE = 'ay-app-v1';
-const EXTRA = ['/favicon.svg', '/manifest.webmanifest'];
+const CACHE = 'ay-app-v2';
+const EXTRA = ['/favicon.png', '/icon-192.png', '/icon-512.png', '/manifest.webmanifest'];
 const assetsIn = (html) => [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
 
 // Fetch the current page, keep it and every file it uses, and drop files of older versions.

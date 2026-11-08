@@ -11,11 +11,14 @@ export function Modal({ title, onClose, children, footer, width = 560, className
   const ref = useRef(null);
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  // Where the cursor was when the dialog was asked for (a field of the form, a button): it goes back there when the
+  // dialog closes. Taken while rendering, before the dialog's own autofocused button (OK, Quick Add…) takes the focus;
+  // taken later it would be that button, which is gone by the time the dialog closes, and the cursor would be lost.
+  const [prev] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
   useEffect(() => {
     openModals++;
     const token = {};
     modalStack.push(token);
-    const prev = document.activeElement;
     requestAnimationFrame(() => {
       const el = ref.current?.querySelector('[autofocus], input:not([type=hidden]):not([tabindex="-1"]), select, textarea, button.primary');
       if (el) el.focus();
@@ -33,8 +36,10 @@ export function Modal({ title, onClose, children, footer, width = 560, className
       openModals--;
       modalStack.splice(modalStack.indexOf(token), 1);
       window.removeEventListener('keydown', onKey);
-      prev?.focus?.();
+      // back to where the cursor was, unless that place is gone (or was nothing)
+      if (prev && prev !== document.body && document.contains(prev)) prev.focus?.();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return createPortal(
     <div
@@ -81,12 +86,12 @@ export function DialogProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
   const confirm = useCallback(
-    (message, { title = 'AY Toys', ok = 'OK', cancel = 'Cancel', danger = false } = {}) =>
+    (message, { title = 'CAS World Wide', ok = 'OK', cancel = 'Cancel', danger = false } = {}) =>
       new Promise((resolve) => setDlg({ message, title, ok, cancel, danger, resolve })),
     [],
   );
   const alert = useCallback(
-    (message, { title = 'AY Toys' } = {}) => new Promise((resolve) => setDlg({ message, title, ok: 'OK', resolve, alertOnly: true })),
+    (message, { title = 'CAS World Wide' } = {}) => new Promise((resolve) => setDlg({ message, title, ok: 'OK', resolve, alertOnly: true })),
     [],
   );
   const toast = useCallback((message, kind = 'ok') => {

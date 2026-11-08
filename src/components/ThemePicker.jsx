@@ -48,7 +48,7 @@ export default function ThemePicker({ theme, onChange, name = 'Company' }) {
         <div className="field-label mb">Preview</div>
         <div className="theme-preview" style={{ background: t.mode === 'dark' ? '#1a1f24' : '#fff' }}>
           <div className="tp-bar" style={{ background: mix(70, '#000') }}>
-            AY Toys · {name}
+            CAS World Wide · {name}
           </div>
           <div className="tp-body">
             <div className="tp-side" style={{ background: t.mode === 'dark' ? '#0e1215' : '#22303c' }}>

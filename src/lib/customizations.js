@@ -37,7 +37,7 @@ export function parseCustomFile(raw) {
     const { templates, skipped } = parseTemplateFile(raw);
     return { templates, reports: [], memorized: [], importTemplates: {}, skipped };
   }
-  if (!data || data.app !== CUSTOM_APP) throw new Error('This is not an AY Toys customization file. Use a file made with "Export" on the Customized Templates screen.');
+  if (!data || data.app !== CUSTOM_APP) throw new Error('This is not a CAS World Wide customization file. Use a file made with "Export" on the Customized Templates screen.');
 
   let skipped = 0;
   let templates = [];

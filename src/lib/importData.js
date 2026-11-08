@@ -459,7 +459,7 @@ export function buildAll(byKind, data, opts = {}) {
 const BOOK_TABLES = ['accounts', 'items', 'customers', 'vendors', 'txns', 'memorized'];
 export function backupProblem(json) {
   const d = json?.data;
-  if (!d || typeof d !== 'object' || !Array.isArray(d.accounts)) return 'This JSON file is not an AY Toys backup.';
+  if (!d || typeof d !== 'object' || !Array.isArray(d.accounts)) return 'This JSON file is not a CAS World Wide backup.';
   for (const t of BOOK_TABLES) {
     if (d[t] === undefined) continue;
     if (!Array.isArray(d[t]) || d[t].some((r) => !r || typeof r !== 'object' || Array.isArray(r))) return `This backup is damaged (the "${t}" list is not readable).`;

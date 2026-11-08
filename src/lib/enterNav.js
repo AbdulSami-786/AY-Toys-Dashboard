@@ -4,10 +4,10 @@
 //    lands on Save & Close (press Enter again to save), as in QuickBooks.
 //  - Text is selected when you arrive in a field with the keyboard, so typing replaces it (a mouse click keeps the caret).
 //  - Enter in a text box (memo) is still a new line; Enter on a button still presses it; Ctrl+Enter is left to the form.
-// Only inside dialogs (.modal), transaction forms (.txn-paper) and anything marked data-enter-next.
+// Only inside dialogs (.modal), transaction forms (their top fields .txn-head and the form .txn-paper) and anything marked data-enter-next.
 // Put data-no-enter-nav on a field or its wrapper to keep Enter for the field itself.
 
-const SCOPE = '.modal, .txn-paper, [data-enter-next]';
+const SCOPE = '.modal, .txn-head, .txn-paper, [data-enter-next]';
 const TEXTY = new Set(['', 'text', 'search', 'tel', 'url', 'email', 'password', 'number']);
 const NOT_ENTRY = new Set(['hidden', 'button', 'submit', 'reset', 'file', 'image', 'color', 'range']);
 
@@ -68,10 +68,11 @@ export function moveNext(from, { submit = true } = {}) {
   return false;
 }
 
-// The first field of the transaction form in the window on show (after Save & New, like opening a new form)
+// The first field of the transaction form in the window on show (after Save & New, like opening a new form):
+// the customer / vendor box above the paper where there is one, otherwise the first field of the paper
 export function focusFirstEntry() {
   setTimeout(() => {
-    const root = document.querySelector('.win-host:not([hidden]) .txn-paper');
+    const root = document.querySelector('.win-host:not([hidden]) .txn-scroll');
     if (!root || document.querySelector('.modal-backdrop')) return;
     const first = entries(root)[0];
     if (first) focusEl(first);

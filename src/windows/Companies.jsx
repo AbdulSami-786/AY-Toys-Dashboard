@@ -11,6 +11,7 @@ import { Modal, useDialog } from '../components/ui';
 import { Field } from '../components/inputs';
 import ThemePicker from '../components/ThemePicker';
 import { today } from '../lib/dates';
+import BrandLogo from '../components/BrandLogo';
 
 const initials = (n) =>
   (n || '?')
@@ -344,9 +345,9 @@ export default function Companies({ fullscreen, create, onOpen }) {
       <div className="welcome">
         <div className="welcome-card">
           <div className="welcome-head">
-            <div className="brand-logo">AY</div>
+            <BrandLogo />
             <div>
-              <h1>AY Toys</h1>
+              <h1>CAS World Wide</h1>
               <p>Pick a shop to open, or compare all of them.</p>
             </div>
             {logout && (

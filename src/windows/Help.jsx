@@ -13,8 +13,8 @@ export function Shortcuts() {
       </div>
       <div className="win-body pad">
         <div className="note mb">
-          Browsers keep a few keys for themselves (Ctrl+W closes the tab, Ctrl+T opens a tab, Ctrl+N opens a window). For those, AY Toys gives an alternative shown
-          next to the key. Tip: install AY Toys as an app (browser menu › Install) for a full-window experience.
+          Browsers keep a few keys for themselves (Ctrl+W closes the tab, Ctrl+T opens a tab, Ctrl+N opens a window). For those, CAS World Wide gives an alternative shown
+          next to the key. Tip: install CAS World Wide as an app (browser menu › Install) for a full-window experience.
         </div>
         <div className="sc-grid">
           {SHORTCUT_HELP.map((g) => (
@@ -50,7 +50,7 @@ export function ProductInfo() {
     /* ignore */
   }
   const rows = [
-    ['Product', 'AY Toys — Wholesale Accounting (Enterprise edition)'],
+    ['Product', 'CAS World Wide — Wholesale Accounting (Enterprise edition)'],
     ['Version', '1.0.0'],
     ['Company', company.name],
     ['Company code', company.code],

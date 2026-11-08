@@ -861,7 +861,7 @@ export function parseTemplateFile(text) {
   } catch {
     throw new Error('This is not a template file (it could not be read).');
   }
-  if (!data || data.app !== TEMPLATE_FILE_APP || !Array.isArray(data.templates)) throw new Error('This is not an AY Toys template file. Use a file made with "Export" on the Templates screen.');
+  if (!data || data.app !== TEMPLATE_FILE_APP || !Array.isArray(data.templates)) throw new Error('This is not a CAS World Wide template file. Use a file made with "Export" on the Templates screen.');
   const templates = [];
   let skipped = 0;
   data.templates.forEach((raw) => {

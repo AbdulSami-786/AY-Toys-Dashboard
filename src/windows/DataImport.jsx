@@ -83,7 +83,7 @@ export default function DataImport({ onDone }) {
           <b>Excel (<code>.xlsx</code>) or CSV</b> made from our template (get it with <b>Download template</b> in the Import / Export Lists window) — customers, vendors, items, chart of accounts, bills and invoices. A QuickBooks list exported to Excel/CSV works too.
         </li>
         <li>
-          <b>AY Toys backup</b> (<code>.json</code>) — replaces everything in this shop.
+          <b>CAS World Wide backup</b> (<code>.json</code>) — replaces everything in this shop.
         </li>
       </ul>
       <p className="muted small">Names that already exist are skipped, so uploading the same file twice is safe.</p>
@@ -117,7 +117,7 @@ export default function DataImport({ onDone }) {
       {found?.format === 'backup' && (
         <div className="note mb">
           <div className="mb">
-            AY Toys backup of <b>{found.json.company?.name || 'a shop'}</b> — {found.json.data.customers?.length || 0} customers, {found.json.data.vendors?.length || 0} vendors, {found.json.data.items?.length || 0} items, {found.json.data.txns?.length || 0} transactions.
+            CAS World Wide backup of <b>{found.json.company?.name || 'a shop'}</b> — {found.json.data.customers?.length || 0} customers, {found.json.data.vendors?.length || 0} vendors, {found.json.data.items?.length || 0} items, {found.json.data.txns?.length || 0} transactions.
           </div>
           <div className="flex">
             <button className="btn primary" onClick={restoreBackup}>

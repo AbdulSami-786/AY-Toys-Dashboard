@@ -460,15 +460,11 @@ input[type='color'] {
   white-space: nowrap;
 }
 .brand-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  background: var(--on-primary);
-  color: var(--primary-700);
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  display: block;
+  object-fit: contain;
+  user-select: none;
 }
 .brand-sub {
   font-weight: 500;
@@ -2335,10 +2331,8 @@ pre.code {
   gap: 14px;
 }
 .welcome-head .brand-logo {
-  width: 44px;
-  height: 44px;
-  font-size: 17px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
 }
 .welcome-head h1 {
   margin: 0;

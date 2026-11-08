@@ -115,7 +115,7 @@ export function AccountModal({ initial, onClose, onSaved, defaultType }) {
             Account is inactive
           </label>
         )}
-        {f.sys && <p className="muted small">This is a system account used by AY Toys; its type can't be changed and it can't be deleted.</p>}
+        {f.sys && <p className="muted small">This is a system account used by CAS World Wide; its type can't be changed and it can't be deleted.</p>}
         <button type="submit" hidden />
       </form>
     </Modal>

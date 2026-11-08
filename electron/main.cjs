@@ -1,4 +1,4 @@
-// AY Toys desktop app (Electron). Shows the built app (dist/) in its own window, from a private app:// address,
+// CAS World Wide desktop app (Electron). Shows the built app (dist/) in its own window, from a private app:// address,
 // so it starts without internet and keeps its books in one place on this computer. Syncing with the Google Sheet
 // is done by the app itself, exactly as in a browser.
 const { app, BrowserWindow, Menu, protocol, net, shell, screen, session, ipcMain } = require('electron');
@@ -18,8 +18,10 @@ protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: 
 // tests run a separate profile so they never touch the real books (set first: the one-copy lock below
 // belongs to the profile, so a test copy never hands over to the installed program)
 if (process.env.AY_PROFILE) app.setPath('userData', path.resolve(process.env.AY_PROFILE));
+// the program used to be called "AY Toys": its data folder keeps that name, so the books saved by earlier versions are still found after the rename
+else app.setPath('userData', path.join(app.getPath('appData'), 'AY Toys'));
 
-// one AY Toys at a time: a second start just brings the open window to the front
+// one CAS World Wide at a time: a second start just brings the open window to the front
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
@@ -73,7 +75,7 @@ function createWindow() {
     minWidth: 360,
     minHeight: 480,
     show: false,
-    title: 'AY Toys',
+    title: 'CAS World Wide',
     backgroundColor: '#e9edf1',
     icon: path.join(__dirname, 'icon.png'),
     autoHideMenuBar: true,
