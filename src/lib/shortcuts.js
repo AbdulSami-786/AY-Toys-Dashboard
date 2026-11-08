@@ -126,6 +126,7 @@ export const SHORTCUT_CATALOG = [
       W('Bill Tracker', 'Receipt', 'tracker', { kind: 'bills' }),
       W('Memorized Transactions', 'Bookmark', 'memorized'),
       W('Templates', 'LayoutTemplate', 'templates'),
+      W('Customized Templates', 'Sparkles', 'customized'),
       W('Profile Lists', 'ListChecks', 'lists'),
       W('Find', 'Search', 'find'),
     ],

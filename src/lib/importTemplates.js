@@ -99,11 +99,71 @@ export const SPECS = {
 const norm = (h) => String(h ?? '').replace(/\*/g, '').trim().toLowerCase();
 export const headLabel = (f) => (f.req ? f.head + ' *' : f.head);
 
+// ---------------------------------------------------------------- customized templates
+// company.importTemplates = { [kind]: { hidden: [field keys left out], heads: { fieldKey: 'own heading' } } }
+// Required columns can't be left out. The importer still reads the standard headings, and also the customized ones.
+let CUSTOM = {};
+export const setImportCustom = (c) => {
+  CUSTOM = c && typeof c === 'object' ? c : {};
+};
+
+// the columns of one template as the user set them up (own headings, optional columns left out)
+export function fieldsFor(kind, custom = CUSTOM) {
+  const cfg = custom?.[kind] || {};
+  const hidden = new Set(cfg.hidden || []);
+  return SPECS[kind].fields
+    .filter((f) => f.req || !hidden.has(f.key))
+    .map((f) => {
+      const h = String(cfg.heads?.[f.key] ?? '').trim();
+      return h ? { ...f, head: h } : f;
+    });
+}
+
+export function isCustomTemplate(kind, custom = CUSTOM) {
+  const c = custom?.[kind];
+  return !!c && ((c.hidden || []).length > 0 || Object.values(c.heads || {}).some((h) => String(h).trim()));
+}
+
+// own headings of the list templates (customers, vendors, items, accounts) → field key
+export function customAliases(custom = CUSTOM) {
+  const out = {};
+  LIST_KINDS.forEach((k) => {
+    Object.entries(custom?.[k]?.heads || {}).forEach(([key, h]) => {
+      const n = norm(h);
+      if (n && SPECS[k].fields.some((f) => f.key === key)) out[n] = key;
+    });
+  });
+  return out;
+}
+
+// A file of customized templates is not trusted: keep only known pages, known optional columns and short headings
+export function cleanImportCustom(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  TEMPLATE_KINDS.forEach((k) => {
+    const c = raw[k];
+    if (!c || typeof c !== 'object') return;
+    const keys = new Set(SPECS[k].fields.map((f) => f.key));
+    const req = new Set(SPECS[k].fields.filter((f) => f.req).map((f) => f.key));
+    const hidden = (Array.isArray(c.hidden) ? c.hidden : []).filter((x) => keys.has(x) && !req.has(x));
+    const heads = {};
+    Object.entries(c.heads && typeof c.heads === 'object' ? c.heads : {}).forEach(([key, h]) => {
+      const t = String(h ?? '').trim().slice(0, 60);
+      if (keys.has(key) && t) heads[key] = t;
+    });
+    if (hidden.length || Object.keys(heads).length) out[k] = { hidden, heads };
+  });
+  return out;
+}
+
 // heading text → field key, for one template
-export function headMap(kind) {
+export function headMap(kind, custom = CUSTOM) {
   const m = {};
   SPECS[kind].fields.forEach((f) => {
     m[norm(f.head)] = f.key;
+  });
+  Object.entries(custom?.[kind]?.heads || {}).forEach(([key, h]) => {
+    if (norm(h) && SPECS[kind].fields.some((f) => f.key === key)) m[norm(h)] = key;
   });
   const extra = {
     invoices: { 'invoice #': 'num', 'invoice number': 'num', 'invoice no.': 'num', 'po no': 'po', 'p.o. number': 'po', 'tax': 'taxrate', 'due': 'duedate' },
@@ -113,8 +173,8 @@ export function headMap(kind) {
 }
 
 // ---------------------------------------------------------------- the Excel files
-const dataSheet = (kind) => {
-  const spec = SPECS[kind];
+const dataSheet = (kind, custom) => {
+  const spec = { ...SPECS[kind], fields: fieldsFor(kind, custom) };
   return {
     name: spec.sheet,
     freeze: 1,
@@ -124,7 +184,7 @@ const dataSheet = (kind) => {
   };
 };
 
-const helpRows = (kinds) => {
+const helpRows = (kinds, custom) => {
   const rows = [
     [{ v: 'How to use this template', s: XS.title }],
     [{ v: 'Fill the sheet(s) from row 2 down — one record per row. Do not rename or reorder the headings. Save as .xlsx and upload it in the Import / Export Lists window (Import tab).', s: XS.note }],
@@ -133,7 +193,7 @@ const helpRows = (kinds) => {
     [],
   ];
   kinds.forEach((k) => {
-    const spec = SPECS[k];
+    const spec = { ...SPECS[k], fields: fieldsFor(k, custom) };
     rows.push([{ v: KIND_LABEL[k] + `  (sheet "${spec.sheet}")`, s: XS.title }]);
     if (spec.note) spec.note.split(/(?<=\.)\s+/).forEach((line) => rows.push([{ v: line, s: XS.note }]));
     rows.push(['Field', 'Required?', 'What to enter', 'Example'].map((v) => ({ v, s: XS.optional })));
@@ -143,14 +203,14 @@ const helpRows = (kinds) => {
   return rows;
 };
 
-const helpSheet = (kinds) => ({ name: 'Instructions', widths: [22, 12, 80, 26], rows: helpRows(kinds) });
+const helpSheet = (kinds, custom) => ({ name: 'Instructions', widths: [22, 12, 80, 26], rows: helpRows(kinds, custom) });
 
-export function templateSheets(kind) {
+export function templateSheets(kind, custom = CUSTOM) {
   const kinds = kind === 'all' ? TEMPLATE_KINDS : [kind];
-  return [...kinds.map(dataSheet), helpSheet(kinds)];
+  return [...kinds.map((k) => dataSheet(k, custom)), helpSheet(kinds, custom)];
 }
 
-export function downloadTemplate(kind) {
+export function downloadTemplate(kind, custom = CUSTOM) {
   const name = kind === 'all' ? 'AY_Toys_import_template_ALL' : `AY_Toys_${kind}_template`;
-  downloadXlsx(name + '.xlsx', templateSheets(kind));
+  downloadXlsx(name + '.xlsx', templateSheets(kind, custom));
 }

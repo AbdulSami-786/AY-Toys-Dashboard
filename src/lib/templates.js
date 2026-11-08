@@ -407,6 +407,8 @@ export function standardTemplate(formType) {
       zebra: false,
       // off: the page is only as long as the bill (footer right under the items); on: the table stretches so the footer sits at the bottom of the page
       fillPage: false,
+      // on: the header and footer end at the lowest box that prints in them (no blank strip from boxes taken out or left empty)
+      fitBands: true,
       stamps: true,
       wordsCurrency: 'Rupees',
       wordsFraction: 'Paisa',

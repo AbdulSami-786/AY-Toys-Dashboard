@@ -112,7 +112,7 @@ export function pageKey(type, props = {}) {
   if (type === 'tracker') return 'tracker:' + (props.kind === 'bills' ? 'bills' : 'income');
   if (type === 'home') return props.tab === 'insights' ? 'insights' : 'home';
   if (type === 'billpayment') return 'paybills';
-  if (type === 'templateeditor') return 'templates';
+  if (type === 'templateeditor' || type === 'customized') return 'templates';
   if (type === 'pickregister') return 'register';
   return type;
 }

@@ -98,7 +98,7 @@ export default function ReportCenter({ tab }) {
         {group === 'memorized' && !q ? (
           <div className="rc-grid">
             {memorized.map((m) => (
-              <div key={m.name} className="rc-card" tabIndex={0} onClick={() => nav.open('report', { reportId: m.reportId, filter: m.filter, range: m.range, from: m.range === 'Custom' ? m.from : undefined, to: m.range === 'Custom' ? m.to : undefined, force: true })}>
+              <div key={m.name} className="rc-card" tabIndex={0} onClick={() => nav.open('report', { reportId: m.reportId, filter: m.filter, range: m.range, from: m.range === 'Custom' ? m.from : undefined, to: m.range === 'Custom' ? m.to : undefined, options: m.options, force: true })}>
                 <div className="rc-thumb" />
                 <b>{m.name}</b>
                 <small>{m.range}</small>

@@ -1515,7 +1515,7 @@ table.tbl {
   align-items: start;
 }
 .report-head .meta {
-  font-size: 11px;
+  font-size: calc(11px * var(--rk, 1));
   color: var(--muted);
   line-height: 1.5;
 }
@@ -1524,24 +1524,25 @@ table.tbl {
 }
 .report-head .co {
   font-weight: 700;
-  font-size: 15px;
+  font-size: calc(15px * var(--rk, 1));
 }
 .report-head .title {
-  font-size: 19px;
+  font-size: calc(19px * var(--rk, 1));
   font-weight: 600;
   margin: 2px 0;
 }
 .report-head .dates {
-  font-size: 12px;
+  font-size: calc(12px * var(--rk, 1));
   color: var(--text-2);
 }
 table.rpt {
   border-collapse: collapse;
   width: 100%;
+  font-size: calc(1em * var(--rk, 1));
   font-variant-numeric: tabular-nums;
 }
 .rpt th {
-  font-size: 11px;
+  font-size: calc(11px * var(--rk, 1));
   font-weight: 700;
   border-bottom: 1px solid var(--text);
   padding: 4px 10px;
@@ -1616,6 +1617,76 @@ table.rpt {
 }
 .rpt .neg {
   color: var(--danger);
+}
+.report-foot {
+  margin-top: 16px;
+  font-size: calc(11px * var(--rk, 1));
+  color: var(--text-2);
+  text-align: center;
+  white-space: pre-line;
+}
+/* Customize Report */
+.cr-cols {
+  display: grid;
+  gap: 6px;
+  max-height: 300px;
+  overflow: auto;
+}
+.cr-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cr-col input:not([type='checkbox']) {
+  flex: 1;
+}
+.cr-col .btn.sm {
+  padding: 3px 6px;
+}
+.cr-spacer {
+  width: 26px;
+  flex: none;
+}
+.cr-tag {
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+.cr-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.cr-add select {
+  width: 200px;
+}
+.cr-calc {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.cr-calc-row {
+  display: flex;
+  gap: 8px;
+}
+.cr-calc-row select {
+  flex: 1;
+  min-width: 0;
+}
+.cr-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
 }
 .rpt-footnote {
   margin-top: 14px;

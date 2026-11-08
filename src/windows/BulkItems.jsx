@@ -5,7 +5,8 @@ import { Package, Save, Columns3, X, Info } from 'lucide-react';
 import { useStore, useLookups } from '../store/store';
 import { useWindows } from '../store/windows';
 import { useOptions } from '../store/options';
-import { useDialog, Modal } from '../components/ui';
+import { useDialog, Modal, Tabs } from '../components/ui';
+import { useUnsavedItems } from '../store/unsavedItems';
 import { DateInput } from '../components/inputs';
 import { ensureTrailing } from './forms/common';
 import { ITEM_TYPES } from '../store/defaults';
@@ -61,6 +62,8 @@ const blankVals = () => Object.fromEntries(COLS.map((c) => [c.key, '']));
 const newRow = (vals = {}) => ({ key: uid(), id: '', orig: blankVals(), vals: { ...blankVals(), ...vals } });
 const isBlank = (r) => !r.id && !isTouched(r); // a new row nobody has typed in
 const isTouched = (r) => COLS.some((c) => String(r.vals[c.key] ?? '') !== String(r.orig[c.key] ?? ''));
+// changed since the row was put on screen (an unsaved item is "touched" from the start: it is still to be saved)
+const isEdited = (r) => COLS.some((c) => String(r.vals[c.key] ?? '') !== String((r.base || r.orig)[c.key] ?? ''));
 const yn = (b) => (b === false ? 'No' : 'Yes');
 const parseYN = (s) => {
   const v = String(s).trim().toLowerCase();
@@ -71,7 +74,7 @@ const parseYN = (s) => {
 const numText = (v) => (v === '' || v === undefined || v === null ? '' : String(v));
 const isNum = (s) => s === '' || Number.isFinite(Number(String(s).replace(/,/g, '')));
 
-export default function BulkItems({ winId }) {
+export default function BulkItems({ winId, tab: tab0 = 'items' }) {
   const { close: closeWin } = useWindows();
   const { data, ledger, saveMany, saveRecord, nextNum } = useStore();
   const L = useLookups();
@@ -89,9 +92,44 @@ export default function BulkItems({ winId }) {
   const [saved, setSaved] = useState(0);
   const gridRef = useRef(null);
 
+  // Unsaved Items tab: names typed on a bill / invoice / item form and never saved. Only those — no saved item is shown here.
+  const unsaved = useUnsavedItems();
+  const [tab, setTab] = useState(tab0 === 'unsaved' ? 'unsaved' : 'items');
+  const inUnsaved = tab === 'unsaved';
+  const effList = inUnsaved ? 'All Items' : list; // the List / View choices only belong to the Items tab
+  const savedNames = useMemo(() => new Set(data.items.map((i) => i.name.trim().toLowerCase())), [data.items]);
+  const stillUnsaved = useMemo(() => unsaved.list.filter((u) => !savedNames.has(String(u.name).trim().toLowerCase())), [unsaved.list, savedNames]);
+  const unsavedVals = (u) => ({
+    ...blankVals(),
+    name: u.name,
+    type: u.type || 'Inventory Part',
+    sku: u.sku || '',
+    category: u.category || '',
+    uom: u.uom || '',
+    pkg: numText(u.pkg),
+    description: u.description || '',
+    purchaseDescription: u.purchaseDescription || '',
+    cost: numText(u.cost),
+    price: numText(u.type === 'Discount' ? u.percent : u.price), // a Discount's price column is its percent
+    vendor: L.vendorMap.get(u.preferredVendorId)?.name || '',
+    barcode: u.barcode || '',
+    reorderPoint: numText(u.reorderPoint),
+    taxable: u.taxable === undefined ? '' : yn(u.taxable),
+  });
+  // columns that hold something typed for an unsaved item are shown even if hidden in Customize Columns, so saving never drops it
+  const unsavedCols = useMemo(() => {
+    const s = new Set();
+    stillUnsaved.forEach((u) => Object.entries(unsavedVals(u)).forEach(([k, v]) => v !== '' && s.add(k)));
+    return s;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stillUnsaved, L]);
+
   // the columns on screen (the Type column is pointless when only one type is listed)
-  const cols = useMemo(() => COLS.filter((c) => shown.includes(c.key) && (c.key !== 'type' || list === 'All Items')), [shown, list]);
-  const typeFor = (r) => (list === 'All Items' ? r.vals.type : list);
+  const cols = useMemo(
+    () => COLS.filter((c) => (shown.includes(c.key) || (inUnsaved && unsavedCols.has(c.key))) && (c.key !== 'type' || effList === 'All Items')),
+    [shown, effList, inUnsaved, unsavedCols],
+  );
+  const typeFor = (r) => (effList === 'All Items' ? r.vals.type : effList);
 
   const rowOf = (i) => {
     const vals = {
@@ -127,13 +165,20 @@ export default function BulkItems({ winId }) {
       newRow,
       isBlank,
     );
-  const [rows, setRows] = useState(() => loadRows(list, view));
+  // an unsaved item as a new row of the grid (it has no id: saving makes it a real item)
+  const unsavedRow = (u) => {
+    const vals = unsavedVals(u);
+    return { key: u.id, id: '', unsavedId: u.id, orig: blankVals(), base: vals, vals: { ...vals } };
+  };
+  const loadUnsaved = () => ensureTrailing([...stillUnsaved].sort((a, b) => a.name.localeCompare(b.name)).map(unsavedRow), newRow, isBlank);
+  const [rows, setRows] = useState(() => (tab0 === 'unsaved' ? loadUnsaved() : loadRows(list, view)));
 
-  const dirtyRows = rows.filter(isTouched);
+  const dirtyRows = rows.filter(isTouched); // rows Save Changes will save
+  const edited = rows.filter(isEdited).length; // rows changed on screen (asked about before they are thrown away)
   const dirty = dirtyRows.length;
 
   const reload = async (listName, viewName) => {
-    if (dirty && !(await dlg.confirm(`You have ${dirty} unsaved change${dirty === 1 ? '' : 's'}. Discard them?`, { ok: 'Discard', danger: true }))) return;
+    if (edited && !(await dlg.confirm(`You have ${edited} unsaved change${edited === 1 ? '' : 's'}. Discard them?`, { ok: 'Discard', danger: true }))) return;
     setList(listName);
     setView(viewName);
     write(LS_LIST, listName);
@@ -141,8 +186,30 @@ export default function BulkItems({ winId }) {
     setRows(loadRows(listName, viewName));
   };
 
+  const switchTab = async (next) => {
+    if (next === tab) return;
+    if (edited && !(await dlg.confirm(`You have ${edited} unsaved change${edited === 1 ? '' : 's'}. Discard them?`, { ok: 'Discard', danger: true }))) return;
+    setTab(next);
+    setErrors({});
+    setSaved(0);
+    if (next === 'unsaved') {
+      // names that have since been saved as real items are not unsaved any more
+      const stale = unsaved.list.filter((u) => savedNames.has(String(u.name).trim().toLowerCase()));
+      if (stale.length) unsaved.forgetMany([], stale.map((u) => u.id));
+      setRows(loadUnsaved());
+    } else setRows(loadRows(list, view));
+  };
+
   const setCell = (ri, key, v) => setRows((rs) => ensureTrailing(rs.map((r, i) => (i === ri ? { ...r, vals: { ...r.vals, [key]: v } } : r)), newRow, isBlank));
-  const removeRow = (ri) => setRows((rs) => ensureTrailing(rs.filter((_, i) => i !== ri), newRow, isBlank));
+  const removeRow = async (ri) => {
+    const r = rows[ri];
+    // an unsaved item is also taken off the list, or it would be back next time
+    if (r?.unsavedId) {
+      if (!(await dlg.confirm(`Remove "${r.vals.name}" from the unsaved items?`, { ok: 'Remove', danger: true }))) return;
+      unsaved.forget(r.unsavedId);
+    }
+    setRows((rs) => ensureTrailing(rs.filter((x) => x !== r), newRow, isBlank));
+  };
 
   const editable = (r, c) => !(c.key === 'qty' && r.id); // on-hand of an existing item changes by Adjust Quantity, not here
   const focusCell = (ri, ci) => gridRef.current?.querySelector(`[data-r="${ri}"][data-c="${ci}"]`)?.focus();
@@ -298,12 +365,16 @@ export default function BulkItems({ winId }) {
       saveMany('items', items);
       // all the opening quantities go in as one inventory adjustment
       if (openLines.length) saveRecord('txns', { type: 'invadjust', num: nextNum('invadjust', 1), date: asOf || today(), accountId: obe, memo: 'Opening stock', lines: openLines });
+      // they are real items now, so they leave the unsaved list (rows that failed stay there)
+      unsaved.forgetMany(items.map((it) => it.name));
     }
     setErrors(errs);
     setSaved(items.length);
     const failed = Object.keys(errs).length;
     // saved rows become plain rows of the grid; the failed ones stay as typed, marked
     setRows((rs) => {
+      // the Unsaved Items tab never shows a saved item: what was saved leaves the grid, the rows that failed stay
+      if (inUnsaved) return ensureTrailing(rs.filter((r) => !savedKeys.has(r.key)), newRow, isBlank);
       const done = new Map(items.map((it) => [it.id, it]));
       const kept = rs.filter((r) => !savedKeys.has(r.key) || r.id).map((r) => (r.id && done.has(r.id) ? rowOf(done.get(r.id)) : r));
       const fresh = items.filter((it) => !rs.some((r) => r.id === it.id)).map(rowOf);
@@ -316,7 +387,7 @@ export default function BulkItems({ winId }) {
   };
 
   const close = async () => {
-    if (dirty && !(await dlg.confirm(`You have ${dirty} unsaved change${dirty === 1 ? '' : 's'}. Close without saving?`, { ok: 'Close', danger: true }))) return;
+    if (edited && !(await dlg.confirm(`You have ${edited} unsaved change${edited === 1 ? '' : 's'}. Close without saving?`, { ok: 'Close', danger: true }))) return;
     closeWin(winId);
   };
 
@@ -329,25 +400,49 @@ export default function BulkItems({ winId }) {
       <div className="win-title">
         <Package size={20} />
         <h1>Add/Edit Multiple Items</h1>
-        <span className="sub">{dirty ? `${dirty} row${dirty === 1 ? '' : 's'} changed — not saved yet` : saved ? `${saved} saved` : 'Type or paste from Excel'}</span>
+        <span className="sub">
+          {inUnsaved
+            ? dirty
+              ? `${dirty} unsaved item${dirty === 1 ? '' : 's'} — Save Changes adds them as items`
+              : saved
+                ? `${saved} saved`
+                : 'No unsaved items'
+            : dirty
+              ? `${dirty} row${dirty === 1 ? '' : 's'} changed — not saved yet`
+              : saved
+                ? `${saved} saved`
+                : 'Type or paste from Excel'}
+        </span>
       </div>
+      <Tabs
+        tabs={[
+          { id: 'items', label: 'Items' },
+          { id: 'unsaved', label: `Unsaved Items (${stillUnsaved.length})` },
+        ]}
+        value={tab}
+        onChange={switchTab}
+      />
       <div className="toolbar flat">
-        <label className="small">
-          List{' '}
-          <select value={list} onChange={(e) => reload(e.target.value, view)} style={{ width: 160 }}>
-            {LISTS.map((l) => (
-              <option key={l}>{l}</option>
-            ))}
-          </select>
-        </label>
-        <label className="small">
-          View{' '}
-          <select value={view} onChange={(e) => reload(list, e.target.value)} style={{ width: 130 }}>
-            <option value="active">Active items</option>
-            <option value="inactive">Inactive items</option>
-            <option value="all">All items</option>
-          </select>
-        </label>
+        {!inUnsaved && (
+          <>
+            <label className="small">
+              List{' '}
+              <select value={list} onChange={(e) => reload(e.target.value, view)} style={{ width: 160 }}>
+                {LISTS.map((l) => (
+                  <option key={l}>{l}</option>
+                ))}
+              </select>
+            </label>
+            <label className="small">
+              View{' '}
+              <select value={view} onChange={(e) => reload(list, e.target.value)} style={{ width: 130 }}>
+                <option value="active">Active items</option>
+                <option value="inactive">Inactive items</option>
+                <option value="all">All items</option>
+              </select>
+            </label>
+          </>
+        )}
         <label className="small" title="Date of the opening quantities typed for new inventory items">
           Qty as of <DateInput value={asOf} onChange={setAsOf} />
         </label>
@@ -363,8 +458,18 @@ export default function BulkItems({ winId }) {
         </button>
       </div>
       <div className="note" style={{ margin: '8px 12px 0' }}>
-        <Info size={13} style={{ verticalAlign: -2 }} /> Tip: copy rows in Excel and paste them into the grid (Ctrl+V). Choose <b>Customize Columns</b> to match your sheet. Existing items are changed right here; a new
-        item's <b>Qty on Hand</b> becomes its opening stock.
+        <Info size={13} style={{ verticalAlign: -2 }} />{' '}
+        {inUnsaved ? (
+          <>
+            Only items typed on a bill, invoice or item form and <b>not saved</b> are here — saved items never show on this tab. Fill in what is missing (price, cost, type…) and press <b>Save Changes</b> to add them all; saved ones
+            leave this list. The <b>×</b> at the start of a row removes that item from it.
+          </>
+        ) : (
+          <>
+            Tip: copy rows in Excel and paste them into the grid (Ctrl+V). Choose <b>Customize Columns</b> to match your sheet. Existing items are changed right here; a new item's <b>Qty on Hand</b> becomes its opening
+            stock.
+          </>
+        )}
       </div>
       <div className="win-body pad" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div className="lines" ref={gridRef} style={{ maxHeight: 'none', flex: 1 }}>
@@ -388,12 +493,12 @@ export default function BulkItems({ winId }) {
             </thead>
             <tbody>
               {rows.map((r, ri) => (
-                <tr key={r.key} className={isTouched(r) ? 'cur' : ''}>
+                <tr key={r.key} className={(inUnsaved ? isEdited(r) : isTouched(r)) ? 'cur' : ''}>
                   <td className="del-cell">{!r.id && isTouched(r) && <button title="Remove this row" onClick={() => removeRow(ri)} style={{ opacity: 1 }}><X size={13} /></button>}</td>
                   {cols.map((c, ci) => {
                     const err = errors[r.key]?.[c.key];
                     if (c.key === 'qty' && r.id) {
-                      const inv = r.vals.type === 'Inventory Part' || (list !== 'All Items' && list === 'Inventory Part');
+                      const inv = r.vals.type === 'Inventory Part' || (effList !== 'All Items' && effList === 'Inventory Part');
                       return (
                         <td key={c.key} className="ro" title="Change the quantity with Adjust Quantity/Value on Hand">
                           {inv ? fq(ledger.itemStat(r.id).qty) : ''}

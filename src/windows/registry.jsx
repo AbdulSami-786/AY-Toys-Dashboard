@@ -26,6 +26,7 @@ import Tracker from './Tracker';
 import { Shortcuts, ProductInfo } from './Help';
 import ImportExport from './ImportExport';
 import Templates from './templates/Templates';
+import Customized from './Customized';
 import TemplateEditor from './templates/TemplateEditor';
 import UsersWindow from './Users';
 import { reportTitle } from '../lib/reports';
@@ -69,6 +70,7 @@ export const WINDOW_COMPONENTS = {
   productinfo: ProductInfo,
   import: ImportExport,
   templates: Templates,
+  customized: Customized,
   templateeditor: TemplateEditor,
   users: UsersWindow,
 };
@@ -109,6 +111,7 @@ const TITLES = {
   productinfo: 'Product Information',
   import: 'Import / Export',
   templates: 'Templates',
+  customized: 'Customized Templates',
   templateeditor: 'Customize Template',
   users: 'Users & Permissions',
 };

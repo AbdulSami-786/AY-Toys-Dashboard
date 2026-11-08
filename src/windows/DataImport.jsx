@@ -3,12 +3,14 @@ import { Upload, DatabaseBackup } from 'lucide-react';
 import { useStore } from '../store/store';
 import { useDialog } from '../components/ui';
 import { KINDS, KIND_LABEL, readDataFile, buildAll } from '../lib/importData';
+import { setImportCustom } from '../lib/importTemplates';
 
 // "Import old data" for the open shop: pick a file, see what it holds, add it to this shop's books.
 export default function DataImport({ onDone }) {
   const store = useStore();
   const { data, company, saveMany, replaceData } = store;
   const dlg = useDialog();
+  setImportCustom(company.importTemplates); // headings the user gave the Excel templates are understood too
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);
   const [kind, setKind] = useState('');

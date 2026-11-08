@@ -207,7 +207,7 @@ export default function Companies({ fullscreen, create, onOpen }) {
 
   const save = (f) => {
     // settings saved by their own screens are left out, so this dialog's older copy doesn't overwrite them
-    const { sample, templates, templateDefaults, templatesRemoved, lists, logo, shortcuts, memorizedReports, ...info } = f;
+    const { sample, templates, templateDefaults, templatesRemoved, lists, logo, shortcuts, memorizedReports, reportOptions, unsavedItems, ...info } = f;
     if (modal.isNew) {
       addCompany(info, { sample });
       dlg.toast(`Shop "${f.name}" created`);

@@ -21,7 +21,9 @@ import {
 import { useStore, useLookups } from '../../store/store';
 import { usePerm } from '../../store/users';
 import { useWindows, useWindowKeys } from '../../store/windows';
+import { focusFirstEntry } from '../../lib/enterNav';
 import { useNav } from '../../store/nav';
+import { useUnsavedItems } from '../../store/unsavedItems';
 import { Modal, useDialog } from '../../components/ui';
 import { Field } from '../../components/inputs';
 import { PrintPreviewModal } from '../../components/print';
@@ -299,6 +301,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     const next = makeNew(null);
     snapshot.current = JSON.stringify(next);
     setF(next);
+    focusFirstEntry();
   };
   // keep the PO / sales order / estimate a document was made from in step with it (txnsAfter = data after the change)
   const refreshSources = (txnsAfter, ...sourceIds) => {
@@ -407,6 +410,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     'alt+s': () => save('new'),
     'alt+a': () => save('close'),
     'ctrl+s': () => save('stay'),
+    'ctrl+enter': () => save('close'),
     'alt+p': () => navTo(seq.prev),
     'alt+n': () => navTo(seq.next),
     'ctrl+n': async () => (await guard()) && reset(),
@@ -492,6 +496,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
 export function useItemNotFound(pick, add) {
   const { data, saveRecord } = useStore();
   const dlg = useDialog();
+  const unsaved = useUnsavedItems();
   return async (name, ctx) => {
     const q = name.trim().toLowerCase();
     const old = data.items.find((i) => [i.name, i.sku, i.barcode].some((v) => v && String(v).trim().toLowerCase() === q));
@@ -501,6 +506,7 @@ export function useItemNotFound(pick, add) {
     }
     if (old) return pick(old, ctx);
     if (await dlg.confirm(`Item "${name}" was not found.\n\nPress Enter to add it as a new item.`, { title: 'Item not found', ok: 'Add New Item' })) add(name, ctx);
+    else unsaved.remember({ name }); // Item List › Unsaved
   };
 }
 

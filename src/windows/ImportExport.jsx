@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Download, FileSpreadsheet } from 'lucide-react';
+import { Download, FileSpreadsheet, Sparkles } from 'lucide-react';
+import { useNav } from '../store/nav';
 import { useStore } from '../store/store';
 import { Tabs } from '../components/ui';
 import { toCSV, downloadFile } from '../lib/format';
-import { TEMPLATE_KINDS, KIND_LABEL, SPECS, downloadTemplate } from '../lib/importTemplates';
+import { TEMPLATE_KINDS, KIND_LABEL, downloadTemplate, fieldsFor, isCustomTemplate, setImportCustom } from '../lib/importTemplates';
 import DataImport from './DataImport';
 
 const TEMPLATES = {
@@ -15,6 +16,8 @@ const TEMPLATES = {
 
 export default function ImportExport({ tab: t0 = 'import' }) {
   const { data, company } = useStore();
+  const nav = useNav();
+  setImportCustom(company.importTemplates); // the importer reads the user's own headings too
   const [tab, setTab] = useState(t0);
   const [tpl, setTpl] = useState('all');
 
@@ -51,7 +54,7 @@ export default function ImportExport({ tab: t0 = 'import' }) {
         {tab === 'import' ? (
           <>
             <div className="flex mb">
-              <button className="btn" onClick={() => downloadTemplate(tpl)}>
+              <button className="btn" onClick={() => downloadTemplate(tpl, company.importTemplates)}>
                 <Download size={14} /> Download template (Excel)
               </button>
               <select value={tpl} onChange={(e) => setTpl(e.target.value)} style={{ width: 240 }} title="Which template to download">
@@ -62,6 +65,10 @@ export default function ImportExport({ tab: t0 = 'import' }) {
                   </option>
                 ))}
               </select>
+              <button className="btn" onClick={() => nav.open('customized', { tab: 'excel' })} title="Choose the columns and headings of each template, export / import them">
+                <Sparkles size={14} /> Customize templates…
+              </button>
+              {TEMPLATE_KINDS.some((k) => isCustomTemplate(k, company.importTemplates)) && <span className="muted small">Customized columns are used below and in the download.</span>}
             </div>
             <div className="tbl-wrap mb" style={{ maxHeight: 260, border: '1px solid var(--border)' }}>
               <table className="tbl">
@@ -75,7 +82,7 @@ export default function ImportExport({ tab: t0 = 'import' }) {
                 </thead>
                 <tbody>
                   {shown.flatMap((k) =>
-                    SPECS[k].fields.map((f, i) => (
+                    fieldsFor(k, company.importTemplates).map((f, i) => (
                       <tr key={k + f.key}>
                         <td>{i === 0 ? <b>{KIND_LABEL[k]}</b> : ''}</td>
                         <td>{f.head}</td>

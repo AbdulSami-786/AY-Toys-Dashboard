@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { rankOptions } from '../lib/search';
+import { moveNext } from '../lib/enterNav';
 
 /**
  * QuickBooks-style type-ahead list field.
@@ -148,7 +149,13 @@ export default function Combo({
       e.preventDefault();
       e.stopPropagation();
       if (unmatched(filtered[hi])) notFound();
-      else pick(filtered[hi]);
+      else {
+        const o = filtered[hi];
+        const from = e.currentTarget;
+        pick(o);
+        // QuickBooks: Enter on a list entry takes it and goes on to the next field
+        if (o && !o.add && !o.disabled) setTimeout(() => moveNext(from, { submit: false }), 0);
+      }
     } else if (e.key === 'Tab') {
       if (unmatched(filtered[hi])) {
         e.preventDefault(); // the dialog takes focus — moving on as well would pull focus out of it

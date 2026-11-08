@@ -3,7 +3,7 @@ import { ITEM_TYPES, ACCOUNT_TYPES } from '../store/defaults';
 import { salesTotals } from './ledger';
 import { dueFromTerms } from './dates';
 import { readXlsx, serialToISO } from './xlsx';
-import { SPECS, headMap, KIND_LABEL, LIST_KINDS, TXN_KINDS } from './importTemplates';
+import { SPECS, headMap, KIND_LABEL, LIST_KINDS, TXN_KINDS, customAliases } from './importTemplates';
 
 export { KIND_LABEL, LIST_KINDS, TXN_KINDS };
 // everything a file can hold, in the order it is saved (lists first, so transactions can point at them)
@@ -68,14 +68,19 @@ const ALIASES = {
   ntn: ['ntn', 'tax id', 'tax number'],
   number: ['number', 'account number', 'account #'],
 };
-const FIELD_OF = Object.fromEntries(Object.entries(ALIASES).flatMap(([k, list]) => list.map((a) => [a, k])));
+const STD_FIELD_OF = Object.fromEntries(Object.entries(ALIASES).flatMap(([k, list]) => list.map((a) => [a, k])));
+// the standard headings, and the ones the user gave their own templates (Customized Templates)
+const fieldOf = (h) => {
+  const n = normHead(h);
+  return STD_FIELD_OF[n] || customAliases()[n] || '';
+};
 
 // CSV rows → [{ name, phone, … }]. QuickBooks puts title rows and blank columns above the real headings, so find them first.
 export function rowsToObjects(rows) {
-  const hi = rows.findIndex((r) => r.some((h) => FIELD_OF[normHead(h)] === 'name'));
+  const hi = rows.findIndex((r) => r.some((h) => fieldOf(h) === 'name'));
   if (hi < 0) return { objs: [], first: '' };
-  const head = rows[hi].map((h) => FIELD_OF[normHead(h)] || '');
-  const first = normHead(rows[hi].find((h) => FIELD_OF[normHead(h)] === 'name'));
+  const head = rows[hi].map((h) => fieldOf(h));
+  const first = normHead(rows[hi].find((h) => fieldOf(h) === 'name'));
   const objs = rows
     .slice(hi + 1)
     .map((r) => {

@@ -33,7 +33,7 @@ export default function CompanyInfo({ tab: initialTab = 'info', winId }) {
   const set = (k) => (e) => setF({ ...f, [k]: e?.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e });
   const save = (andClose) => {
     // these are saved by their own screens; don't overwrite them with this window's older copy
-    const { templates, templateDefaults, templatesRemoved, lists, logo, theme, shortcuts, memorizedReports, ...rest } = f;
+    const { templates, templateDefaults, templatesRemoved, lists, logo, theme, shortcuts, memorizedReports, reportOptions, unsavedItems, ...rest } = f;
     updateCompany(company.id, { ...rest, taxRate: Number(f.taxRate) || 0, fyMonth: Number(f.fyMonth) || 1 });
     dlg.toast('Company settings saved');
     if (andClose) close(winId);
@@ -58,7 +58,7 @@ export default function CompanyInfo({ tab: initialTab = 'info', winId }) {
         value={tab}
         onChange={setTab}
       />
-      <div className="win-body pad" style={{ maxWidth: 900 }}>
+      <div className="win-body pad" data-enter-next style={{ maxWidth: 900 }}>
         {tab === 'info' && (
           <div className="grid2">
             <Field label="Company name">

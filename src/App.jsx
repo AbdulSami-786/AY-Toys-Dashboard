@@ -16,6 +16,7 @@ import { pageKey } from './lib/permissions';
 import { downloadFile } from './lib/format';
 import { backupProblem } from './lib/importData';
 import { fmtDate, today } from './lib/dates';
+import { installEnterNav } from './lib/enterNav';
 
 // With more than one shop, every new session starts on the shop screen (figures of each shop, all-shop reports).
 const PICKED = 'ay.shopPicked';
@@ -294,6 +295,9 @@ function Shell() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [activeId, handlersRef, menuIdx, run, close, dlg]);
+
+  // Enter moves to the next field, text is selected when you tab in (QuickBooks style)
+  useEffect(() => installEnterNav(), []);
 
   // stop the browser from swallowing Alt (focusing its own menu)
   useEffect(() => {

@@ -125,7 +125,7 @@ export default function PayBills({ prefill, winId }) {
     if (andClose) close(winId);
   };
 
-  useWindowKeys({ 'alt+a': () => pay(true), 'alt+s': () => pay(false) });
+  useWindowKeys({ 'alt+a': () => pay(true), 'alt+s': () => pay(false), 'ctrl+enter': () => pay(true) });
 
   return (
     <div className="win">

@@ -499,6 +499,9 @@ function BasicPanel({ t, form, set, setStyle, setCo, setPage, makeDefault, setMa
         <label className="check" style={{ alignSelf: 'end', paddingBottom: 6 }}>
           <input type="checkbox" checked={!!st.fillPage} onChange={(e) => setStyle('fillPage', e.target.checked)} /> Fill the whole page (footer at the bottom, even for a short bill)
         </label>
+        <label className="check" style={{ alignSelf: 'end', paddingBottom: 6 }} title="Untick it to keep the header and footer exactly as tall as drawn in the Layout Designer, e.g. to leave room for a pre-printed letterhead">
+          <input type="checkbox" checked={st.fitBands !== false} onChange={(e) => setStyle('fitBands', e.target.checked)} /> Cut blank space: header and footer end at the last box that prints
+        </label>
       </div>
       <button className="btn sm mt" onClick={relayout}>
         <RotateCcw size={13} /> Re-arrange boxes for this paper

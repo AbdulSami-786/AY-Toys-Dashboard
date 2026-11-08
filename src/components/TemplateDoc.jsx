@@ -8,6 +8,25 @@ const HANDLES = ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'];
 const CELL_CLASS = { rate: 'n', amount: 'n', qty: 'q' };
 const QTY_KEYS = ['pkg', 'ctn', 'pcs', 'qty'];
 
+// a box that prints nothing for this document (it is left out of the page, see Box)
+function printsNothing(b, ctx) {
+  const pic = b.kind === 'logo' || b.kind === 'image';
+  if (!(b.hideEmpty || pic)) return false;
+  if (pic) return !(b.kind === 'logo' ? ctx.logo : b.src);
+  if (b.kind === 'text') return !b.text;
+  if (b.kind === 'field' && b.field !== 'companyBlock' && b.field !== 'totals') return (ctx.values[b.field] ?? '') === '';
+  return false;
+}
+
+// A header / footer is as tall as the lowest box that prints in it, not as tall as it was drawn: boxes taken out, or
+// left empty, no longer leave a blank strip. Kept as designed when nothing in it prints (room left on purpose, e.g.
+// for pre-printed letterhead) or when the template turns this off.
+function fitBand(band, height, tpl, ctx) {
+  const shown = tpl.boxes.filter((b) => b.band === band && !b.hidden && !printsNothing(b, ctx));
+  if (!shown.length) return height;
+  return Math.min(height, Math.round((Math.max(...shown.map((b) => b.y + b.h)) + 1.5) * 10) / 10);
+}
+
 /**
  * Renders one printable document from a template.
  * design = { selectedId, onBoxDown(e, box, mode), onBandDown(e, band), grid } turns it into the Layout Designer canvas.
@@ -28,7 +47,10 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const pct = (c) => (Math.max(1, colW(c)) / totalW) * 100 + '%';
   const uomInQty = !cols.some((c) => c.key === 'uom' || c.key === 'ctn');
   // the table only stretches to the footer when the template asks to fill the page; otherwise a short bill prints short
-  const bodyMin = !flow && st.fillPage ? Math.max(15, H - tpl.headerHeight - tpl.footerHeight - 4) : 0;
+  const trim = !design && !flow && st.fitBands !== false;
+  const headerH = trim ? fitBand('header', tpl.headerHeight, tpl, ctx) : tpl.headerHeight;
+  const footerH = trim ? fitBand('footer', tpl.footerHeight, tpl, ctx) : tpl.footerHeight;
+  const bodyMin = !flow && st.fillPage ? Math.max(15, H - headerH - footerH - 4) : 0;
   // "Total" goes in the column just before the first quantity column
   const totalLabelAt = Math.max(0, cols.findIndex((c) => QTY_KEYS.includes(c.key)) - 1);
   const framed = st.borders === 'grid' || st.borders === 'columns';
@@ -47,7 +69,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
       className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '') + (flow ? ' roll' : '')}
       style={{ width: W + 'mm', fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
     >
-      <Band band="header" height={tpl.headerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
+      <Band band="header" height={headerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       <div className="tdoc-body" style={{ minHeight: bodyMin ? bodyMin + 'mm' : undefined }}>
         <table className={`tdoc-lines b-${st.borders} h-${st.tableHeader}${st.zebra ? ' zebra' : ''}${tiny ? ' tiny' : ''}`}>
           <colgroup>
@@ -101,7 +123,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
         )}
         {design && <div className="band-tag body">Line items · columns are set in Data Layout › Columns</div>}
       </div>
-      <Band band="footer" height={tpl.footerHeight} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
+      <Band band="footer" height={footerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       {st.stamps && ctx.stamp && <div className={'tdoc-stamp ' + ctx.stamp.toLowerCase()}>{ctx.stamp}</div>}
     </div>
   );

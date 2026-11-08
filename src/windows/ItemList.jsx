@@ -1,22 +1,25 @@
 import { useMemo, useRef, useState } from 'react';
 import { Package, Plus, Pencil, Trash2, FileBarChart, Boxes, ClipboardList, AlertTriangle, Download, Table2, Upload } from 'lucide-react';
+import { useUnsavedItems } from '../store/unsavedItems';
 import { useStore, useLookups } from '../store/store';
 import { useWindowKeys } from '../store/windows';
 import { useNav } from '../store/nav';
 import { useOptions } from '../store/options';
-import { useDialog, Modal, useContextMenu } from '../components/ui';
+import { useDialog, Modal, useContextMenu, Tabs, Empty } from '../components/ui';
 import { Field, Select, DateInput, MoneyInput, QtyInput } from '../components/inputs';
 import Combo from '../components/Combo';
 import { ITEM_TYPES } from '../store/defaults';
 import { money, num, qty as fq, toCSV, downloadFile } from '../lib/format';
-import { today } from '../lib/dates';
+import { today, fmtDate } from '../lib/dates';
 import { readItemImage } from '../lib/itemImage';
 import { useListNav } from '../components/listnav';
 import { AccountModal } from './ChartOfAccounts';
 import { NameCombo } from './NameModals';
 
-export function ItemModal({ initial, onClose, onSaved }) {
+export function ItemModal({ initial, onClose, onSaved, rememberUnsaved = true }) {
   const { data, saveRecord, nextNum, ledger } = useStore();
+  const unsaved = useUnsavedItems();
+  const savedRef = useRef(false);
   const L = useLookups();
   const O = useOptions();
   const dlg = useDialog();
@@ -89,6 +92,8 @@ export function ItemModal({ initial, onClose, onSaved }) {
     rec.percent = num(rec.percent);
     if (!rec.purchaseDescription) rec.purchaseDescription = rec.description;
     const saved = saveRecord('items', rec);
+    savedRef.current = true;
+    unsaved.forget(rec.name);
     if (isNew && inv && num(openQty)) {
       const obe = data.accounts.find((a) => a.sys === 'obe')?.id;
       const unit = num(openCost) || rec.cost;
@@ -105,15 +110,21 @@ export function ItemModal({ initial, onClose, onSaved }) {
     onClose();
   };
 
+  // a new item written but not saved goes to Item List › Unsaved (never into the item lists on bills and invoices)
+  const cancel = () => {
+    if (isNew && rememberUnsaved && !savedRef.current) unsaved.remember(f);
+    onClose();
+  };
+
   return (
     <Modal
       title={isNew ? 'New Item' : 'Edit Item'}
-      onClose={onClose}
+      onClose={cancel}
       width={820}
       footer={
         <>
           <span className="sp muted small">{inv && !isNew ? `On hand: ${fq(ledger.itemStat(f.id).qty)} ${f.uom || ''} · Avg cost ${money(ledger.itemStat(f.id).avgCost)}` : ''}</span>
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={cancel}>
             Cancel
           </button>
           <button className="btn primary" onClick={save}>
@@ -299,6 +310,9 @@ export default function ItemList() {
   const [lowOnly, setLowOnly] = useState(false);
   const [modal, setModal] = useState(null);
   const [sort, setSort] = useState({ key: 'name', dir: 1 });
+  const [tab, setTab] = useState('items');
+  const [usel, setUsel] = useState(null); // selected row of the Unsaved tab
+  const unsaved = useUnsavedItems();
   const ref = useRef(null);
 
   const rows = useMemo(() => {
@@ -338,14 +352,33 @@ export default function ItemList() {
     if (await dlg.confirm(`Delete item "${i.name}"?`, { ok: 'Delete', danger: true })) deleteRecord('items', i.id);
   };
 
-  useWindowKeys({
-    ...keys,
-    enter: () => selected && setModal(clean(selected)),
-    'ctrl+n': () => setModal({}),
-    'ctrl+e': () => selected && setModal(clean(selected)),
-    'ctrl+d': () => del(selected),
-    'ctrl+q': () => selected && nav.report('quickreport', { itemId: selected.id }),
-  });
+  const unsavedSel = unsaved.list.find((u) => u.id === usel);
+  // open the New Item form filled in with what was typed; saving it removes the entry from the Unsaved tab
+  const addUnsaved = (u) => {
+    if (!u) return;
+    const { id, at, ...draft } = u;
+    setModal(draft);
+  };
+  const dropUnsaved = async (u) => {
+    if (u && (await dlg.confirm(`Remove "${u.name}" from the unsaved items?`, { ok: 'Remove', danger: true }))) unsaved.forget(u.id);
+  };
+
+  useWindowKeys(
+    tab === 'unsaved'
+      ? {
+          enter: () => addUnsaved(unsavedSel),
+          'ctrl+n': () => setModal({}),
+          'ctrl+d': () => dropUnsaved(unsavedSel),
+        }
+      : {
+          ...keys,
+          enter: () => selected && setModal(clean(selected)),
+          'ctrl+n': () => setModal({}),
+          'ctrl+e': () => selected && setModal(clean(selected)),
+          'ctrl+d': () => del(selected),
+          'ctrl+q': () => selected && nav.report('quickreport', { itemId: selected.id }),
+        },
+  );
 
   const totals = rows.reduce((s, r) => ({ value: s.value + (r.type === 'Inventory Part' ? r.value : 0), qty: s.qty + (r.type === 'Inventory Part' ? r.onHand : 0) }), { value: 0, qty: 0 });
   const lowCount = rows.filter((r) => r.low).length;
@@ -365,7 +398,7 @@ export default function ItemList() {
   const menu = (i) => [
     { label: 'New Item', key: 'Ctrl+N', onClick: () => setModal({}) },
     { label: 'Edit Item', key: 'Ctrl+E', onClick: () => setModal(clean(i)) },
-    { label: 'Duplicate Item', onClick: () => setModal({ ...clean(i), id: undefined, name: i.name + ' (copy)', sku: '' }) },
+    { label: 'Duplicate Item', onClick: () => setModal({ ...clean(i), id: undefined, name: i.name + ' (copy)', sku: '', _copy: true }) },
     { label: 'Delete Item', key: 'Ctrl+D', onClick: () => del(i) },
     { label: i.active === false ? 'Make Active' : 'Make Inactive', onClick: () => saveRecord('items', { ...clean(i), active: i.active === false }) },
     '-',
@@ -389,7 +422,65 @@ export default function ItemList() {
           </button>
         )}
       </div>
-      <div className="toolbar flat">
+      <Tabs
+        tabs={[
+          { id: 'items', label: 'Items' },
+          { id: 'unsaved', label: `Unsaved (${unsaved.list.length})` },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
+      {tab === 'unsaved' && (
+        <>
+          <div className="toolbar flat">
+            <button className="btn sm primary" disabled={!unsavedSel} onClick={() => addUnsaved(unsavedSel)}>
+              <Plus size={13} /> Add as Item
+            </button>
+            <button className="btn sm" disabled={!unsavedSel} onClick={() => dropUnsaved(unsavedSel)}>
+              <Trash2 size={13} /> Remove
+            </button>
+            <button className="btn sm" disabled={!unsaved.list.length} onClick={() => nav.open('bulkitems', { tab: 'unsaved', n: Date.now() })} title="Complete and save all of them in one grid">
+              <Table2 size={13} /> Add All in Grid
+            </button>
+            <span className="sp muted small">Items typed on a bill or invoice and not saved. They stay here, out of the item lists on forms, until you add them.</span>
+          </div>
+          <div className="win-body tbl-wrap">
+            {unsaved.list.length ? (
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th className="r">Cost</th>
+                    <th className="r">Price</th>
+                    <th>Typed on</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...unsaved.list]
+                    .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+                    .map((u) => (
+                      <tr key={u.id} className={u.id === usel ? 'sel' : ''} onClick={() => setUsel(u.id)} onDoubleClick={() => addUnsaved(u)}>
+                        <td className="b">{u.name}</td>
+                        <td>{u.type}</td>
+                        <td>{u.category}</td>
+                        <td className="muted">{u.description}</td>
+                        <td className="r">{u.cost ? money(u.cost) : ''}</td>
+                        <td className="r">{u.price ? money(u.price) : ''}</td>
+                        <td>{u.at ? fmtDate(u.at.slice(0, 10), company.dateStyle) : ''}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            ) : (
+              <Empty>No unsaved items. A name typed for a new item and not saved is kept here.</Empty>
+            )}
+          </div>
+        </>
+      )}
+      {tab === 'items' && <div className="toolbar flat">
         <button className="btn sm primary" onClick={() => setModal({})}>
           <Plus size={13} /> New Item
         </button>
@@ -435,8 +526,8 @@ export default function ItemList() {
         <label className="check small">
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} /> Inactive
         </label>
-      </div>
-      <div className="win-body tbl-wrap" ref={ref}>
+      </div>}
+      {tab === 'items' && <div className="win-body tbl-wrap" ref={ref}>
         <table className="tbl">
           <thead>
             <tr>
@@ -502,8 +593,8 @@ export default function ItemList() {
             </tr>
           </tfoot>
         </table>
-      </div>
-      {modal && <ItemModal initial={modal.id || modal.name ? modal : undefined} onClose={() => setModal(null)} onSaved={(i) => setSel(i.id)} />}
+      </div>}
+      {modal && <ItemModal initial={modal.id || modal.name ? (({ _copy, ...rec }) => rec)(modal) : undefined} rememberUnsaved={!modal._copy} onClose={() => setModal(null)} onSaved={(i) => setSel(i.id)} />}
       {ctx.node}
     </div>
   );
