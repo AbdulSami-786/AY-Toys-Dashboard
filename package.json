@@ -2,7 +2,7 @@
   "name": "ay-toys-dashboard",
   "productName": "CAS World Wide",
   "private": true,
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "CAS World Wide — QuickBooks-style wholesale accounting. Works offline, syncs with Google Sheets.",
   "author": "CAS World Wide",
   "type": "module",

@@ -250,6 +250,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
   const txnFile = useTxnFile({
     type,
     label: meta.title.replace(/\s+/g, '_'),
+    docName: meta.title,
     canImport: !f.voided,
     getDoc: () => ({
       num: f.num,
@@ -276,7 +277,6 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
 
   const extra = (
     <>
-      {type !== 'check' && txnFile.buttons}
       {isPO && (
         <TB
           icon={PackageCheck}
@@ -286,6 +286,7 @@ export default function PurchaseForm({ type, txnId, prefill, template, fromId, w
         />
       )}
       {type === 'bill' && <TB icon={CreditCard} label="Pay Bill" disabled={ctl.isNew || !(open > 0)} onClick={() => nav.open('paybills', { prefill: { vendorId: f.vendorId, billId: f.id } })} />}
+      {type !== 'check' && txnFile.buttons}
     </>
   );
 

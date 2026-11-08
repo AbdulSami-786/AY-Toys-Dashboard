@@ -342,6 +342,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
   const txnFile = useTxnFile({
     type,
     label: meta.title.replace(/\s+/g, '_'),
+    docName: meta.title,
     canImport: !f.voided,
     getDoc: () => ({
       num: f.num,
@@ -378,11 +379,11 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
 
   const extra = (
     <>
-      {txnFile.buttons}
       {type === 'invoice' && (
         <TB icon={Wallet} label="Receive Pmt" disabled={ctl.isNew || !open} onClick={() => nav.open('payment', { prefill: { customerId: f.customerId, invoiceId: f.id } })} />
       )}
       {(type === 'estimate' || type === 'salesorder') && <TB icon={FileOutput} label="Create Invoice" onClick={convert} disabled={f.closed} />}
+      {txnFile.buttons}
     </>
   );
 

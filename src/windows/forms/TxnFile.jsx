@@ -13,13 +13,14 @@ import { KIND_OF, KIND_WORD, exportTxnFile, readTxnFile, buildOneFromFile, build
  *  canImport    → false for a voided document
  * Several documents in one file can be added at once as new invoices / bills (invoice and bill forms only).
  */
-export function useTxnFile({ type, getDoc, hasContent, applyRec, canImport = true, label }) {
+export function useTxnFile({ type, getDoc, hasContent, applyRec, canImport = true, label, docName }) {
   const { data, company, saveMany } = useStore();
   const dlg = useDialog();
   const fileRef = useRef(null);
   const kind = KIND_OF[type];
   const word = KIND_WORD[kind];
   const addAllOk = type === 'invoice' || type === 'bill';
+  const shortName = docName || word[0].toUpperCase() + word.slice(1); // the button names: Import Invoice, Export Invoice…
 
   const doExport = async () => {
     const doc = getDoc();
@@ -63,8 +64,8 @@ export function useTxnFile({ type, getDoc, hasContent, applyRec, canImport = tru
 
   const buttons = (
     <>
-      <TB icon={FileDown} label="Export" title={`Save this ${word} as an Excel file (same layout as the import template)`} onClick={doExport} />
-      <TB icon={FileUp} label="Import" title={`Fill this ${word} from an Excel / CSV file`} onClick={() => fileRef.current?.click()} disabled={!canImport} />
+      <TB icon={FileUp} label={`Import ${shortName}`} title={`Fill this ${word} from an Excel / CSV file`} onClick={() => fileRef.current?.click()} disabled={!canImport} />
+      <TB icon={FileDown} label={`Export ${shortName}`} title={`Save this ${word} as an Excel file (same layout as the import template)`} onClick={doExport} />
       <input ref={fileRef} type="file" accept=".xlsx,.csv,text/csv" hidden onChange={doImport} />
     </>
   );
