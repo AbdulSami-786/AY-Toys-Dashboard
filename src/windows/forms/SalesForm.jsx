@@ -180,6 +180,8 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
   const calcByKey = useMemo(() => new Map(calc.lines.map((l) => [l.key, l])), [calc]);
   const customer = L.customerMap.get(f.customerId);
   const cartons = useMemo(() => cartonTotals(f.lines.filter((l) => !isEmptyLine(l))), [f.lines]);
+  // total quantity of all item lines (shown under the subtotal)
+  const totalQty = useMemo(() => Math.round(f.lines.filter((l) => !isEmptyLine(l)).reduce((s, l) => s + num(l.qty), 0) * 1000) / 1000, [f.lines]);
   const saved = data.txns.find((t) => t.id === f.id);
   const showTax = num(company.taxRate) > 0 || num(f.taxRate) > 0 || f.lines.some((l) => l.taxable);
   const sells = type === 'invoice' || type === 'salesreceipt';
@@ -692,6 +694,10 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
               <div className="totals">
                 <span className="lbl">Subtotal</span>
                 <span className="v">{money(calc.subtotal)}</span>
+                <span className="lbl">Total quantity</span>
+                <span className="v" title="Quantity of all the item lines">
+                  {fq(totalQty)}
+                </span>
                 {showTax && (
                   <>
                     <span className="lbl flex" style={{ justifyContent: 'flex-end' }}>
