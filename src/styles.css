@@ -2888,6 +2888,30 @@ table.tdoc-lines {
 .tdoc.roll .tbox.bd-top {
   border-color: #000;
 }
+/* a receipt of a fixed length: one per paper, the next one starts on a new paper */
+.tslip {
+  overflow: hidden;
+  break-after: page;
+  page-break-after: always;
+}
+.tslip:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+.tdoc-cont {
+  margin-top: 2mm;
+  padding-top: 1.5mm;
+  border-top: 0.35mm dashed #000;
+  text-align: center;
+  font-size: 0.85em;
+  font-weight: 700;
+}
+@media screen {
+  .tslip {
+    border-bottom: 1px dashed #aab2bb;
+    margin-bottom: 3mm;
+  }
+}
 .tdoc-nolines {
   height: 8mm;
 }

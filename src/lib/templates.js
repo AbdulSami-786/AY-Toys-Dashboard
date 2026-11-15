@@ -53,6 +53,9 @@ export const FONTS = {
 export const isRoll = (page) => page?.size === 'R80' || page?.size === 'R58';
 // margin that suits the printable width of each roll (most printers print 72 mm of an 80 mm roll, 48 mm of a 58 mm roll)
 export const ROLL_MARGIN = { R80: 4, R58: 5 };
+// Fixed receipt length (page.rollLength, mm) → how many items one receipt holds. 0 / unset = as long as the bill needs.
+export const ROLL_ITEMS = { 210: 20, 297: 30 };
+export const rollFixedLength = (page) => (isRoll(page) && ROLL_ITEMS[Number(page?.rollLength)] ? Number(page.rollLength) : 0);
 
 export function pageSize(page) {
   const p = PAPERS[page?.size] || PAPERS.A4;

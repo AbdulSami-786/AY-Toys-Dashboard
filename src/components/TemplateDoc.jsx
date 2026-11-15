@@ -1,5 +1,5 @@
-import { useLayoutEffect, useState } from 'react';
-import { FONTS, contentSize, pageSize, isRoll, fieldLabel, columnLabel, columnAlign, PX_PER_MM } from '../lib/templates';
+import { useLayoutEffect, useRef, useState } from 'react';
+import { FONTS, ROLL_ITEMS, rollFixedLength, contentSize, pageSize, isRoll, fieldLabel, columnLabel, columnAlign, PX_PER_MM } from '../lib/templates';
 import { num, qty as fmtQty } from '../lib/format';
 
 export const accentOf = (tpl, company) => tpl.style.accent || company?.theme?.primary || '#2ca01c';
@@ -64,10 +64,14 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
 
   const cell = (l, key) => (carton && QTY_KEYS.includes(key) ? '' : key === 'qty' && uomInQty && l.qty && l.uom ? `${l.qty} ${l.uom}` : l[key]);
 
-  return (
+  // one receipt of a fixed length (210 / 297 mm) holds a fixed number of items (20 / 30); more items go on to the next receipt
+  const fixedLen = !design && flow ? rollFixedLength(tpl.page) : 0;
+
+  // `zoom` shrinks a receipt that would be taller than its paper (see Slip); `note` closes a receipt that is continued
+  const renderDoc = (lines, last, zoom = 1, note = '') => (
     <div
       className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '') + (flow ? ' roll' : '')}
-      style={{ width: W + 'mm', fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
+      style={{ width: W / zoom + 'mm', zoom: zoom === 1 ? undefined : zoom, fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
     >
       <Band band="header" height={headerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       <div className="tdoc-body" style={{ minHeight: bodyMin ? bodyMin + 'mm' : undefined }}>
@@ -87,7 +91,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
             </tr>
           </thead>
           <tbody>
-            {ctx.lines.map((l, i) => (
+            {lines.map((l, i) => (
               <tr key={i}>
                 {cols.map((c) => (
                   <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
@@ -96,7 +100,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
                 ))}
               </tr>
             ))}
-            {totalRow && (
+            {last && totalRow && (
               <tr className="tdoc-total">
                 {cols.map((c, i) => (
                   <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
@@ -105,7 +109,7 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
                 ))}
               </tr>
             )}
-            {!ctx.lines.length && (
+            {!lines.length && (
               <tr>
                 <td colSpan={cols.length || 1} className="tdoc-nolines">
                   &nbsp;
@@ -123,8 +127,51 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
         )}
         {design && <div className="band-tag body">Line items · columns are set in Data Layout › Columns</div>}
       </div>
-      <Band band="footer" height={footerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
+      {last ? <Band band="footer" height={footerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} /> : <div className="tdoc-cont">{note}</div>}
       {st.stamps && ctx.stamp && <div className={'tdoc-stamp ' + ctx.stamp.toLowerCase()}>{ctx.stamp}</div>}
+    </div>
+  );
+
+  if (!fixedLen) return renderDoc(ctx.lines, true);
+  const per = ROLL_ITEMS[fixedLen];
+  const avail = fixedLen - 2 * num(tpl.page.margin ?? 4) - 1;
+  const n = Math.max(1, Math.ceil(ctx.lines.length / per));
+  const sig = [tpl.id, tpl.boxes.length, tpl.headerHeight, tpl.footerHeight, st.fontSize, W, ctx.lines.length].join('|');
+  return (
+    <>
+      {Array.from({ length: n }, (_, i) => (
+        <Slip key={i + '|' + sig} avail={avail}>
+          {(z) => renderDoc(ctx.lines.slice(i * per, (i + 1) * per), i === n - 1, z, `Continued on the next receipt (${i + 1} of ${n})`)}
+        </Slip>
+      ))}
+    </>
+  );
+}
+
+// One receipt of a fixed length: exactly as tall as the paper. A receipt that comes out taller (a long header, many items) is
+// scaled down until it fits, so the table always fits the paper whether it holds 1 item or all of them.
+function Slip({ avail, children }) {
+  const ref = useRef(null);
+  const [z, setZ] = useState(1);
+  // search for the largest scale that still fits (the receipt gets wider as it shrinks, so it is not a simple ratio)
+  const range = useRef({ lo: 0.45, hi: 1.001 });
+  useLayoutEffect(() => {
+    const el = ref.current?.firstElementChild;
+    if (!el) return;
+    const h = el.getBoundingClientRect().height / PX_PER_MM;
+    const r = range.current;
+    if (h > avail + 0.3) {
+      if (z <= r.lo + 0.001) return; // as small as it goes
+      r.hi = z;
+      setZ(Math.max(r.lo, (r.lo + r.hi) / 2));
+    } else if (h < avail - 3 && z < 1 && r.hi - z > 0.015) {
+      r.lo = z;
+      setZ(Math.min(1, (r.lo + r.hi) / 2));
+    }
+  });
+  return (
+    <div ref={ref} className="tslip" style={{ height: avail + 'mm' }}>
+      {children(z)}
     </div>
   );
 }
@@ -310,8 +357,10 @@ export function PageRule({ template, lines = 0 }) {
   const m = num(template.page.margin ?? 12);
   const roll = isRoll(template.page);
   const [measured, setMeasured] = useState(0);
+  // a receipt of a chosen length (210 / 297 mm) is always exactly that long
+  const fixedLen = rollFixedLength(template.page);
   useLayoutEffect(() => {
-    if (!roll) return;
+    if (!roll || fixedLen) return;
     const el = document.querySelector('#print-root .tdoc');
     if (!el) return;
     const measure = () => setMeasured(Math.ceil(el.getBoundingClientRect().height / PX_PER_MM));
@@ -321,13 +370,13 @@ export function PageRule({ template, lines = 0 }) {
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [roll, template, lines]);
+  }, [roll, fixedLen, template, lines]);
   const guess = 2 * m + template.headerHeight + template.footerHeight + 16 + lines * 10;
   // A very long bill is not squeezed onto one giant slip (the printer would shrink it to fit): the page length is capped
   // and the item lines continue on the next slip, whole rows only, with the column headings repeated.
   // Printing lays each row out a little taller than the screen does (about 0.1 mm a row). A slip cut to the exact measured length
   // would push the totals onto a second, nearly empty slip, so the length gets a few mm to spare, a bit more for longer bills.
-  const len = Math.ceil(roll ? Math.min(ROLL_MAX_MM, measured > 0 ? measured + 2 * m + 4 + lines * 0.15 : guess) : h);
+  const len = fixedLen || Math.ceil(roll ? Math.min(ROLL_MAX_MM, measured > 0 ? measured + 2 * m + 4 + lines * 0.15 : guess) : h);
   // the desktop program prints a receipt on paper exactly this long (see PrintProvider)
   useLayoutEffect(() => {
     const root = document.getElementById('print-root');

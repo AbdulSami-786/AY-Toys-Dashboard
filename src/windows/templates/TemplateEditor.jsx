@@ -22,6 +22,7 @@ import {
   rescaleBoxes,
   narrowColumns,
   isRoll,
+  rollFixedLength,
   ROLL_MARGIN,
   buildDocContext,
   sampleDoc,
@@ -493,6 +494,15 @@ function BasicPanel({ t, form, set, setStyle, setCo, setPage, makeDefault, setMa
             <option value="landscape">Landscape</option>
           </select>
         </Field>
+        {isRoll(t.page) && (
+          <Field label="Receipt length">
+            <select value={rollFixedLength(t.page)} onChange={(e) => setPage('rollLength', Number(e.target.value))}>
+              <option value={0}>Automatic — as long as the bill</option>
+              <option value={210}>210 mm — 20 items on one receipt</option>
+              <option value={297}>297 mm — 30 items on one receipt</option>
+            </select>
+          </Field>
+        )}
         <Field label="Margins (mm)">
           <input type="number" min={0} max={40} step={1} className="num" value={t.page.margin} onChange={(e) => setPage('margin', Math.max(0, Math.min(40, num(e.target.value))))} />
         </Field>
