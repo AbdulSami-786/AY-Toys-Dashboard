@@ -241,7 +241,10 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
     const src = b.kind === 'logo' ? ctx.logo : b.src;
     empty = !src;
     const pos = b.align === 'center' ? 'center' : b.align === 'right' ? 'right center' : 'left center';
-    body = src ? <img src={src} alt="" style={{ objectPosition: pos }} /> : design ? <div className="tb-val ph">{b.kind === 'logo' ? 'Logo — upload it in Basic Customization' : 'Image — choose a picture'}</div> : null;
+    // on a roll the picture is only as tall as it needs to be (its own proportions, never taller than the box was drawn),
+    // so no blank slot is left above the shop name
+    const rollImg = flow ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', height: 'auto', maxHeight: b.h + 'mm', alignSelf: b.align === 'center' ? 'center' : b.align === 'right' ? 'flex-end' : 'flex-start' } : null;
+    body = src ? <img src={src} alt="" style={{ objectPosition: pos, ...rollImg }} /> : design ?<div className="tb-val ph">{b.kind === 'logo' ? 'Logo — upload it in Basic Customization' : 'Image — choose a picture'}</div> : null;
   } else if (b.kind === 'sign') {
     body = (
       <div className="tb-sign" style={{ borderTopColor: color || '#000' }}>
@@ -256,9 +259,8 @@ function Box({ b, tpl, ctx, design, accent, flow, boost = 1 }) {
 
   // on a roll the box keeps its width (as a share of the paper) but its height follows the text
   // (a signature's room to sign is the space above its line, so it needs no height of its own below the text)
-  const fixedH = b.kind === 'line' || pic;
   const place = flow
-    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: fixedH ? b.h + 'mm' : undefined, height: pic ? b.h + 'mm' : undefined }
+    ? { width: (Math.min(b.w, flow.W) / flow.W) * 100 + '%', minHeight: b.kind === 'line' ? b.h + 'mm' : undefined }
     : { left: b.x + 'mm', top: b.y + 'mm', width: b.w + 'mm', height: b.h + 'mm' };
   const style = {
     ...place,
@@ -311,7 +313,14 @@ export function PageRule({ template, lines = 0 }) {
   useLayoutEffect(() => {
     if (!roll) return;
     const el = document.querySelector('#print-root .tdoc');
-    if (el) setMeasured(Math.ceil(el.getBoundingClientRect().height / PX_PER_MM));
+    if (!el) return;
+    const measure = () => setMeasured(Math.ceil(el.getBoundingClientRect().height / PX_PER_MM));
+    measure();
+    // a picture (logo) has no height until it has loaded: measure again whenever the receipt changes size
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, [roll, template, lines]);
   const guess = 2 * m + template.headerHeight + template.footerHeight + 16 + lines * 10;
   // A very long bill is not squeezed onto one giant slip (the printer would shrink it to fit): the page length is capped

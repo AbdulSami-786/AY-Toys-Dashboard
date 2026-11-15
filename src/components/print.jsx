@@ -20,7 +20,13 @@ export function PrintProvider({ children }) {
     if (root) delete root.dataset.page;
     setContent(node);
     // after the page length has been measured (PageRule)
-    setTimeout(() => {
+    setTimeout(async () => {
+      // a logo is part of the receipt's length: wait for it, then for the page length to be measured again
+      const pics = [...(root?.querySelectorAll('img') || [])];
+      if (pics.length) {
+        await Promise.all(pics.map((i) => i.decode().catch(() => {})));
+        await new Promise((r) => setTimeout(r, 120));
+      }
       const [w, h] = (root?.dataset.page || '').split('x').map(Number);
       // a receipt in the desktop program: printed on paper exactly as long as the bill, not the printer's own paper
       // length (blank paper after a short bill); window.print() can't choose the paper
