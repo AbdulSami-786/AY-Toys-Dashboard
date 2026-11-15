@@ -2,7 +2,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileText, Search, ChevronsLeft, ChevronsRight, X, Cloud, CloudOff, RefreshCw, AlertCircle, Settings2, Menu, UserCircle } from 'lucide-react';
 import MenuBar from './components/MenuBar';
 import ErrorBoundary from './components/ErrorBoundary';
-import { MENUS, GLOBAL_KEYS, comboFromEvent } from './lib/commands';
+import { MENUS, comboFromEvent } from './lib/commands';
+import { keymap } from './lib/keymap';
 import { useStore } from './store/store';
 import { WindowsProvider, useWindows, ThisWindowProvider } from './store/windows';
 import { WINDOW_COMPONENTS, windowTitle } from './windows/registry';
@@ -257,8 +258,20 @@ function Shell() {
       const target = e.target;
       const inInput = target instanceof Element && !!target.closest('input, textarea, select, [contenteditable=true]');
       const h = handlersRef.current[activeId];
+      // customizable shortcuts (Customize Keyboard Shortcuts): the key may now belong to another command
+      const km = keymap();
+      const entry = km.byCombo[combo];
       let key = combo;
       if (combo === 'insert' && !inInput) key = 'ctrl+n';
+      else if (entry?.type === 'window') key = entry.handler;
+      else if (!entry && km.windowDefaults.has(combo)) return; // this command was moved to another key, or has none now
+      // a key the user gave to a "go to" command is theirs, ahead of what the open window does with that key
+      if (entry?.type === 'global' && entry.moved) {
+        if (entry.cmd.notInInput && inInput) return;
+        e.preventDefault();
+        run(entry.cmd);
+        return;
+      }
       if (h && key in h && typeof h[key] === 'function') {
         if (key === 'enter' && inInput) return;
         const r = h[key](e);
@@ -281,14 +294,14 @@ function Shell() {
         setMenuIdx(menuKeys[m[1]]);
         return;
       }
-      const g = GLOBAL_KEYS[combo];
+      const g = entry?.type === 'global' ? entry.cmd : null;
       if (g) {
         if (g.notInInput && inInput) return;
         e.preventDefault();
         run(g);
         return;
       }
-      if (combo === 'ctrl+p') {
+      if (entry?.id === 'w.print') {
         e.preventDefault();
         dlg.toast('Open a report or transaction to print', 'err');
       }
@@ -414,7 +427,7 @@ function Shell() {
               '-',
               ...(perm.admin ? [{ label: 'Users & Permissions…', onClick: () => open('users') }] : []),
               { label: 'Change My Password…', onClick: () => setPwOpen(true) },
-              { label: 'Fingerprint…', onClick: () => setFpOpen(true) },
+              { label: 'Face ID / Fingerprint…', onClick: () => setFpOpen(true) },
               { label: 'Lock Screen', onClick: () => usersApi.lock() },
               { label: 'Log Out', onClick: () => usersApi.logout() },
             ])

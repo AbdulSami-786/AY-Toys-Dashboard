@@ -420,8 +420,6 @@ function ShopCard({ c, f, current, period, show, onToggle, onOpen, onEdit, onDel
         {/* green / red would give away profit or loss, so the colour only shows with the figures */}
         {tile('Net profit', f?.netProfit, !show ? '' : ready && f.netProfit < 0 ? 'loss' : 'profit')}
         {tile('Cash in hand', f?.cashInHand, 'cash', show && ready && f.notDeposited ? `incl. ${amount(f.notDeposited, cur)} not deposited` : 'today')}
-        {tile('Accounts receivable', f?.receivables, 'recv', 'customers owe you')}
-        {tile('Accounts payable', f?.payables, 'pay', 'you owe vendors')}
       </div>
       )}
       {f?.source === 'sheet' && <div className="st-src">From the Google Sheet · updated {new Date(f.at).toLocaleString()}</div>}

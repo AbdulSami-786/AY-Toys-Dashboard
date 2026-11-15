@@ -191,7 +191,7 @@ export const MENUS = [
       '-',
       { label: 'Users & Permissions...', cmd: { open: 'users' } },
       { label: 'Change My Password...', cmd: { action: 'changePassword' } },
-      { label: 'Fingerprint...', cmd: { action: 'fingerprint' } },
+      { label: 'Face ID / Fingerprint...', cmd: { action: 'fingerprint' } },
       { label: 'Lock Screen', cmd: { action: 'lock' } },
       { label: 'Log Out', cmd: { action: 'logout' } },
       '-',
@@ -284,6 +284,7 @@ export const MENUS = [
     key: 'h',
     items: [
       { label: 'Keyboard Shortcuts', key: 'F1', cmd: { open: 'shortcuts' } },
+      { label: 'Customize Keyboard Shortcuts...', cmd: { open: 'keymap' } },
       { label: 'Product Information', key: 'F2', cmd: { open: 'productinfo' } },
       { label: 'Google Sheets Setup Guide', cmd: { open: 'sync', props: { tab: 'guide' } } },
     ],

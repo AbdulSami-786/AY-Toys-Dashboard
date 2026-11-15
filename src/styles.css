@@ -2898,6 +2898,28 @@ table.tdoc-lines {
   break-after: auto;
   page-break-after: auto;
 }
+/* a fixed-size receipt: header on top, the table takes all the room between, footer at the bottom */
+.tdoc.slip {
+  display: flex;
+  flex-direction: column;
+}
+.tdoc.slip > .tdoc-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.tdoc.slip table.tdoc-lines {
+  flex: 1 1 auto;
+}
+/* nothing but the table gives way: header, footer and their rows keep their full height (too much → the whole receipt is scaled down) */
+.tdoc.slip > .tdoc-band,
+.tdoc.slip > .tdoc-cont,
+.tdoc.slip .tdoc-band.flow > .tflow-row {
+  flex-shrink: 0;
+}
+.tdoc.roll .tdoc-lines tr.tdoc-blank td {
+  border-bottom: 0.25mm dashed #000;
+}
 .tdoc-cont {
   margin-top: 2mm;
   padding-top: 1.5mm;

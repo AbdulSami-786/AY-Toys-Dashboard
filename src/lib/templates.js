@@ -55,7 +55,13 @@ export const isRoll = (page) => page?.size === 'R80' || page?.size === 'R58';
 export const ROLL_MARGIN = { R80: 4, R58: 5 };
 // Fixed receipt length (page.rollLength, mm) → how many items one receipt holds. 0 / unset = as long as the bill needs.
 export const ROLL_ITEMS = { 210: 20, 297: 30 };
-export const rollFixedLength = (page) => (isRoll(page) && ROLL_ITEMS[Number(page?.rollLength)] ? Number(page.rollLength) : 0);
+// A receipt roll is 80 x 297 mm unless the template says otherwise (210 mm, or 0 = Automatic: as long as the bill)
+export const rollFixedLength = (page) => {
+  if (!isRoll(page)) return 0;
+  const v = page?.rollLength;
+  if (v === undefined || v === null || v === '') return 297;
+  return ROLL_ITEMS[Number(v)] ? Number(v) : 0;
+};
 
 export function pageSize(page) {
   const p = PAPERS[page?.size] || PAPERS.A4;

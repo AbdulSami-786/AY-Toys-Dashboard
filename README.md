@@ -67,10 +67,10 @@ are switched off.
 
 `npm run release` builds, in `release/` (nothing else is left there):
 
-- **CAS World Wide Setup 1.18.0.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
+- **CAS World Wide Setup 1.19.0.exe** — installer: choose the folder, Start-menu and desktop shortcut, uninstall from
   Windows Settings › Apps. Installs for the current user (no admin rights).
-- **CAS World Wide 1.18.0 Portable.exe** — the same program as one file, runs without installing.
-- **CAS World Wide 1.18.0.zip** — both files in one zip, to send to another computer.
+- **CAS World Wide 1.19.0 Portable.exe** — the same program as one file, runs without installing.
+- **CAS World Wide 1.19.0.zip** — both files in one zip, to send to another computer.
 
 Change `version` in `package.json` for every new release, so the file names show it is new.
 
@@ -140,6 +140,7 @@ Templates are saved with the company (and sync to the `Companies` tab of the Goo
 date keys `+ - T W K M H Y R [ ] ; '` · menus `Alt+F/E/V/L/C/U/O/B/R/W/H`.
 
 Browsers reserve `Ctrl+W`, `Ctrl+T` and `Ctrl+N`, so use **Alt+K** (Write Checks), **Alt+T** (Memorized list) and **Insert** (new) instead.
+Every key can be changed in **Help › Customize Keyboard Shortcuts…** (a key belongs to one command only: giving `Ctrl+P` to another command leaves Print without a key).
 Press **F1** in the app for the full list (it includes extra `Alt+Shift+…` keys for bills, pay bills, receive payments, etc.).
 
 ## Google Sheet (one sheet for everything, set in the code)

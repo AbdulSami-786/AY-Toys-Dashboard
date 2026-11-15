@@ -1,18 +1,25 @@
-import { Keyboard, Info } from 'lucide-react';
+import { Keyboard, Info, Settings2 } from 'lucide-react';
 import { SHORTCUT_HELP } from '../lib/commands';
 import { useStore } from '../store/store';
 import { Kbd } from '../components/ui';
+import { useWindows } from '../store/windows';
 
 export function Shortcuts() {
+  const { open } = useWindows();
   return (
     <div className="win">
       <div className="win-title">
         <Keyboard size={20} />
         <h1>Keyboard Shortcuts</h1>
         <span className="sub">QuickBooks Desktop shortcuts work the same here</span>
+        <span className="sp" />
+        <button className="btn" onClick={() => open('keymap')}>
+          <Settings2 size={14} /> Customize shortcuts…
+        </button>
       </div>
       <div className="win-body pad">
         <div className="note mb">
+          This list shows the standard keys. If you changed a key, the new key shows in the menus and in <b>Customize shortcuts…</b>.<br />
           Browsers keep a few keys for themselves (Ctrl+W closes the tab, Ctrl+T opens a tab, Ctrl+N opens a window). For those, CAS World Wide gives an alternative shown
           next to the key. Tip: install CAS World Wide as an app (browser menu › Install) for a full-window experience.
         </div>

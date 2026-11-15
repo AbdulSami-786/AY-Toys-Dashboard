@@ -170,6 +170,12 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
   const colOn = (k) => col(k).screen !== false;
   const colLbl = (k, d) => col(k).label || d;
 
+  // The line table follows the chosen template: its columns, in the template's order (Templates › Columns)
+  const COL_LABELS = { item: 'Item', desc: 'Description', pkg: 'Pkg', ctn: 'Ctn', pcs: 'Pcs', qty: 'T/Qty', uom: 'U/M', rate: 'Rate', amount: 'Amount' };
+  const RIGHT_COLS = ['pkg', 'ctn', 'pcs', 'qty', 'rate', 'amount'];
+  const COL_WIDTHS = { pkg: 56, ctn: 60, pcs: 60, qty: 72, uom: 56, rate: 96, amount: 110, tax: 44 };
+  const colWidth = (k) => (k === 'item' ? (colOn('desc') ? 190 : undefined) : COL_WIDTHS[k]);
+
   const calc = useMemo(() => salesTotals(f.lines.filter((l) => !isEmptyLine(l)), f.taxRate, L.itemMap), [f.lines, f.taxRate, L.itemMap]);
   const calcByKey = useMemo(() => new Map(calc.lines.map((l) => [l.key, l])), [calc]);
   const customer = L.customerMap.get(f.customerId);
@@ -324,6 +330,84 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
   useEffect(() => {
     if (cur >= f.lines.length) setCur(Math.max(0, f.lines.length - 1));
   }, [f.lines.length, cur]);
+
+  // the columns on screen: the template's own order; Item, Qty, Rate and Amount always show, the others when the template shows them on screen
+  const lineCols = (() => {
+    const all = ['item', 'desc', 'pkg', 'ctn', 'pcs', 'qty', 'uom', 'rate', 'amount', 'tax'];
+    const order = tpl.columns.map((c) => c.key).filter((k) => all.includes(k));
+    all.forEach((k) => order.includes(k) || order.push(k));
+    return order.filter((k) => (['item', 'qty', 'rate', 'amount'].includes(k) ? true : k === 'tax' ? showTax : colOn(k)));
+  })();
+  const lineCell = (k, l, i, it, short, computed) => {
+    const discount = it?.type === 'Discount';
+    switch (k) {
+      case 'item':
+        return (
+          <td key={k}>
+            <Combo
+              value={l.itemId}
+              options={O.itemOpts}
+              onChange={(id) => setLine(i, { itemId: id })}
+              onAddNew={(name) => setSub({ kind: 'item', name, line: i, key: l.key })}
+              onNotFound={(name) => itemNotFound(name, { line: i, key: l.key })}
+              dropWidth={460}
+            />
+          </td>
+        );
+      case 'desc':
+        return (
+          <td key={k}>
+            <input data-col="desc" value={l.description || ''} onChange={(e) => setLine(i, { description: e.target.value })} />
+          </td>
+        );
+      case 'pkg':
+        return (
+          <td key={k} className="ro">
+            {num(l.pkg) || num(it?.pkg) ? fq(num(l.pkg) || num(it?.pkg)) : ''}
+          </td>
+        );
+      case 'ctn':
+        return <td key={k}>{discount || !(num(l.pkg) || num(it?.pkg)) ? <input disabled /> : <QtyInput value={l.ctn ?? ''} onChange={(v) => setLine(i, { ctn: v })} />}</td>;
+      case 'pcs':
+        return <td key={k}>{discount ? <input disabled /> : <QtyInput value={l.pcs ?? ''} onChange={(v) => setLine(i, { pcs: v })} />}</td>;
+      case 'qty':
+        return (
+          <td key={k} className={short ? 'ro qtywarn' : ''} style={short ? { padding: 0 } : undefined}>
+            {discount ? <input disabled /> : <QtyInput value={l.qty} onChange={(v) => setLine(i, { qty: v })} />}
+          </td>
+        );
+      case 'uom':
+        return (
+          <td key={k}>
+            <input value={l.uom || ''} onChange={(e) => setLine(i, { uom: e.target.value })} />
+          </td>
+        );
+      case 'rate':
+        return (
+          <td key={k}>
+            {discount ? (
+              <input className="num" value={l.rate ?? ''} onChange={(e) => setLine(i, { rate: e.target.value })} title="Type 5% for a percent discount, or an amount" />
+            ) : (
+              <MoneyInput value={l.rate} onChange={(v) => setLine(i, { rate: v })} />
+            )}
+          </td>
+        );
+      case 'amount':
+        return (
+          <td key={k}>
+            {discount ? <input className="num" disabled value={computed ? money(computed.amount) : ''} /> : <MoneyInput value={l.amount} onChange={(v) => setLine(i, { amount: v })} />}
+          </td>
+        );
+      case 'tax':
+        return (
+          <td key={k} className="cb">
+            <input type="checkbox" checked={!!l.taxable} onChange={(e) => setLine(i, { taxable: e.target.checked })} tabIndex={-1} />
+          </td>
+        );
+      default:
+        return null;
+    }
+  };
 
   const open = f.id ? ledger.open.get(f.id) : undefined;
   const paid = type === 'invoice' && open !== undefined && Math.abs(open) < 0.005 && calc.total > 0;
@@ -531,31 +615,19 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
               <table>
                 <colgroup>
                   <col style={{ width: 34 }} />
-                  <col style={{ width: colOn('desc') ? 190 : undefined }} />
-                  {colOn('desc') && <col />}
-                  {colOn('pkg') && <col style={{ width: 56 }} />}
-                  {colOn('ctn') && <col style={{ width: 60 }} />}
-                  {colOn('pcs') && <col style={{ width: 60 }} />}
-                  <col style={{ width: 72 }} />
-                  {colOn('uom') && <col style={{ width: 56 }} />}
-                  <col style={{ width: 96 }} />
-                  <col style={{ width: 110 }} />
-                  {showTax && <col style={{ width: 44 }} />}
+                  {lineCols.map((k) => (
+                    <col key={k} style={{ width: colWidth(k) }} />
+                  ))}
                   <col style={{ width: 30 }} />
                 </colgroup>
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>{colLbl('item', 'Item')}</th>
-                    {colOn('desc') && <th>{colLbl('desc', 'Description')}</th>}
-                    {colOn('pkg') && <th className="r">{colLbl('pkg', 'Pkg')}</th>}
-                    {colOn('ctn') && <th className="r">{colLbl('ctn', 'Ctn')}</th>}
-                    {colOn('pcs') && <th className="r">{colLbl('pcs', 'Pcs')}</th>}
-                    <th className="r">{colLbl('qty', 'T/Qty')}</th>
-                    {colOn('uom') && <th>{colLbl('uom', 'U/M')}</th>}
-                    <th className="r">{colLbl('rate', 'Rate')}</th>
-                    <th className="r">{colLbl('amount', 'Amount')}</th>
-                    {showTax && <th>Tax</th>}
+                    {lineCols.map((k) => (
+                      <th key={k} className={RIGHT_COLS.includes(k) ? 'r' : undefined}>
+                        {k === 'tax' ? 'Tax' : colLbl(k, COL_LABELS[k])}
+                      </th>
+                    ))}
                     <th />
                   </tr>
                 </thead>
@@ -569,55 +641,7 @@ export default function SalesForm({ type, txnId, prefill, template, fromId, winI
                         <td className="ro" style={{ textAlign: 'center' }}>
                           {isEmptyLine(l) ? '' : i + 1}
                         </td>
-                        <td>
-                          <Combo
-                            value={l.itemId}
-                            options={O.itemOpts}
-                            onChange={(id) => setLine(i, { itemId: id })}
-                            onAddNew={(name) => setSub({ kind: 'item', name, line: i, key: l.key })}
-                            onNotFound={(name) => itemNotFound(name, { line: i, key: l.key })}
-                            dropWidth={460}
-                          />
-                        </td>
-                        {colOn('desc') && (
-                          <td>
-                            <input data-col="desc" value={l.description || ''} onChange={(e) => setLine(i, { description: e.target.value })} />
-                          </td>
-                        )}
-                        {colOn('pkg') && <td className="ro">{num(l.pkg) || num(it?.pkg) ? fq(num(l.pkg) || num(it?.pkg)) : ''}</td>}
-                        {colOn('ctn') && (
-                          <td>
-                            {it?.type === 'Discount' || !(num(l.pkg) || num(it?.pkg)) ? <input disabled /> : <QtyInput value={l.ctn ?? ''} onChange={(v) => setLine(i, { ctn: v })} />}
-                          </td>
-                        )}
-                        {colOn('pcs') && <td>{it?.type === 'Discount' ? <input disabled /> : <QtyInput value={l.pcs ?? ''} onChange={(v) => setLine(i, { pcs: v })} />}</td>}
-                        <td className={short ? 'ro qtywarn' : ''} style={short ? { padding: 0 } : undefined}>
-                          {it?.type === 'Discount' ? <input disabled /> : <QtyInput value={l.qty} onChange={(v) => setLine(i, { qty: v })} />}
-                        </td>
-                        {colOn('uom') && (
-                          <td>
-                            <input value={l.uom || ''} onChange={(e) => setLine(i, { uom: e.target.value })} />
-                          </td>
-                        )}
-                        <td>
-                          {it?.type === 'Discount' ? (
-                            <input className="num" value={l.rate ?? ''} onChange={(e) => setLine(i, { rate: e.target.value })} title="Type 5% for a percent discount, or an amount" />
-                          ) : (
-                            <MoneyInput value={l.rate} onChange={(v) => setLine(i, { rate: v })} />
-                          )}
-                        </td>
-                        <td>
-                          {it?.type === 'Discount' ? (
-                            <input className="num" disabled value={computed ? money(computed.amount) : ''} />
-                          ) : (
-                            <MoneyInput value={l.amount} onChange={(v) => setLine(i, { amount: v })} />
-                          )}
-                        </td>
-                        {showTax && (
-                          <td className="cb">
-                            <input type="checkbox" checked={!!l.taxable} onChange={(e) => setLine(i, { taxable: e.target.checked })} tabIndex={-1} />
-                          </td>
-                        )}
+                        {lineCols.map((k) => lineCell(k, l, i, it, short, computed))}
                         <td className="del-cell">
                           {!isEmptyLine(l) && (
                             <button className="icon-btn" tabIndex={-1} onClick={() => removeLine(i)} title="Delete line (Ctrl+Del)">

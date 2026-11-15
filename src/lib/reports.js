@@ -901,6 +901,28 @@ function incomeByCustomer(ctx) {
   return { columns: [T('label', ''), M('inc', 'Income'), M('cogs', 'Cost of Goods Sold'), M('net', 'Net Income'), P('margin', 'Margin')], rows, quick: true };
 }
 
+// What the Sales / Cost of Goods Sold line was booked against: Accounts Receivable (or the deposit account) for a sales line,
+// the Inventory Asset of the same item for a cost line.
+function incomeSplit(ctx, l, isIncome) {
+  const all = linesByTxn(ctx.ledger).get(l.txnId) || [];
+  const others = [
+    ...new Set(
+      all
+        .filter((x) => {
+          if (x.accountId === l.accountId || Math.sign(x.amount) === Math.sign(l.amount)) return false;
+          const t = ctx.ledger.accMap.get(x.accountId)?.type;
+          if (t === 'Income' || t === 'Cost of Goods Sold') return false;
+          return isIncome || (!!l.itemId && x.itemId === l.itemId);
+        })
+        .map((x) => x.accountId),
+    ),
+  ];
+  if (others.length === 1) return ctx.L.accountLabel(others[0]);
+  return others.length > 1 ? '-SPLIT-' : '';
+}
+
+// Every customer's income and cost lines in invoice order: each item's Sales line is followed by its Cost of Goods Sold line,
+// then the next item, then the next invoice… with a running balance (income less cost).
 function incomeByCustomerDetail(ctx) {
   const by = new Map();
   for (const x of incomeLines(ctx)) {
@@ -910,51 +932,52 @@ function incomeByCustomerDetail(ctx) {
   }
   const rows = [];
   let grand = 0;
+  let gDr = 0;
+  let gCr = 0;
   for (const id of [...by.keys()].sort(byCustName(ctx))) {
     const name = custName(ctx, id);
     rows.push({ kind: 'section', level: 1, cells: { label: name } });
     let bal = 0;
-    for (const [part, isIncome] of [
-      ['Income', true],
-      ['Cost of Goods Sold', false],
-    ]) {
-      const list = by.get(id).filter((x) => x.income === isIncome);
-      if (!list.length) continue;
-      rows.push({ kind: 'section', level: 2, cells: { label: part } });
-      let sub = 0;
-      for (const x of list) {
-        sub += x.v;
-        bal = round2(bal + x.v);
-        rows.push({
-          kind: 'row',
-          level: 3,
-          txnId: x.l.txnId,
-          cells: {
-            type: typeLabel(x.l.type),
-            date: x.l.date,
-            num: x.l.num,
-            memo: x.l.memo || ctx.ledger.txnById.get(x.l.txnId)?.memo || '',
-            account: ctx.L.accountLabel(x.l.accountId),
-            amount: x.v,
-            balance: bal,
-          },
-        });
-      }
-      rows.push({ kind: 'subtotal', level: 2, cells: { label: 'Total ' + part, amount: round2(sub) } });
+    let dr = 0;
+    let cr = 0;
+    for (const x of by.get(id)) {
+      bal = round2(bal + x.v);
+      if (x.v > 0) cr += x.v;
+      else dr -= x.v;
+      rows.push({
+        kind: 'row',
+        level: 2,
+        txnId: x.l.txnId,
+        cells: {
+          type: typeLabel(x.l.type),
+          date: x.l.date,
+          num: x.l.num,
+          item: ctx.L.itemMap.get(x.l.itemId)?.name || x.l.memo || ctx.ledger.txnById.get(x.l.txnId)?.memo || '',
+          account: ctx.L.accountLabel(x.l.accountId),
+          split: incomeSplit(ctx, x.l, x.income),
+          debit: x.v > 0 ? '' : round2(-x.v),
+          credit: x.v > 0 ? x.v : '',
+          balance: bal,
+        },
+      });
     }
-    rows.push({ kind: 'subtotal', level: 1, cells: { label: 'Net Income: ' + name, amount: bal, balance: bal } });
+    rows.push({ kind: 'subtotal', level: 1, cells: { label: 'Net Income: ' + name, debit: round2(dr), credit: round2(cr), balance: bal } });
     grand += bal;
+    gDr += dr;
+    gCr += cr;
   }
-  rows.push({ kind: 'grand', level: 0, cells: { label: 'TOTAL', amount: round2(grand), balance: round2(grand) } });
+  rows.push({ kind: 'grand', level: 0, cells: { label: 'TOTAL', debit: round2(gDr), credit: round2(gCr), balance: round2(grand) } });
   return {
     columns: [
       T('label', ''),
       T('type', 'Type'),
       D('date'),
       T('num', 'Num'),
-      T('memo', 'Memo', { wrap: true, width: 220 }),
-      T('account', 'Account', { wrap: true, width: 150 }),
-      M('amount', 'Amount'),
+      T('item', 'Item / Memo', { wrap: true, width: 170 }),
+      T('account', 'Account', { wrap: true, width: 140 }),
+      T('split', 'Split', { wrap: true, width: 140 }),
+      M('debit', 'Debit'),
+      M('credit', 'Credit'),
       M('balance', 'Balance'),
     ],
     rows,

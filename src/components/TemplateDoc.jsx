@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FONTS, ROLL_ITEMS, rollFixedLength, contentSize, pageSize, isRoll, fieldLabel, columnLabel, columnAlign, PX_PER_MM } from '../lib/templates';
 import { num, qty as fmtQty } from '../lib/format';
 
@@ -68,10 +68,10 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
   const fixedLen = !design && flow ? rollFixedLength(tpl.page) : 0;
 
   // `zoom` shrinks a receipt that would be taller than its paper (see Slip); `note` closes a receipt that is continued
-  const renderDoc = (lines, last, zoom = 1, note = '') => (
+  const renderDoc = (lines, last, zoom = 1, note = '', slip = null) => (
     <div
-      className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '') + (flow ? ' roll' : '')}
-      style={{ width: W / zoom + 'mm', zoom: zoom === 1 ? undefined : zoom, fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
+      className={'tdoc' + (design ? ' design' : '') + (design?.grid ? ' grid' : '') + (flow ? ' roll' : '') + (slip ? ' slip' : '')}
+      style={{ width: W / zoom + 'mm', height: slip ? slip.avail / zoom + 'mm' : undefined, zoom: zoom === 1 ? undefined : zoom, fontFamily: (FONTS[st.font] || FONTS.system).css, fontSize: num(st.fontSize || 9) * boost + 'pt', '--acc': accent }}
     >
       <Band band="header" height={headerH} tpl={tpl} ctx={ctx} design={design} accent={accent} flow={flow ? W : 0} boost={boost} />
       <div className="tdoc-body" style={{ minHeight: bodyMin ? bodyMin + 'mm' : undefined }}>
@@ -100,16 +100,15 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
                 ))}
               </tr>
             ))}
-            {last && totalRow && (
-              <tr className="tdoc-total">
-                {cols.map((c, i) => (
-                  <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
-                    {QTY_KEYS.includes(c.key) ? (c.key === 'pkg' || sums[c.key] === undefined ? '' : fmtQty(sums[c.key])) : i === totalLabelAt ? (carton ? 'Total' : 'Total qty') : ''}
-                  </td>
-                ))}
-              </tr>
-            )}
-            {!lines.length && (
+            {slip &&
+              Array.from({ length: Math.max(0, slip.per - lines.length) }, (_, i) => (
+                <tr key={'blank' + i} className="tdoc-blank">
+                  {cols.map((c) => (
+                    <td key={c.key}>&nbsp;</td>
+                  ))}
+                </tr>
+              ))}
+            {!lines.length && !slip && (
               <tr>
                 <td colSpan={cols.length || 1} className="tdoc-nolines">
                   &nbsp;
@@ -117,6 +116,18 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
               </tr>
             )}
           </tbody>
+          {last && totalRow && (
+            // in a tfoot, so a bill of several pages shows the total quantity at the foot of every page
+            <tfoot>
+              <tr className="tdoc-total">
+                {cols.map((c, i) => (
+                  <td key={c.key} className={CELL_CLASS[c.key]} style={{ textAlign: columnAlign(c.key) }}>
+                    {QTY_KEYS.includes(c.key) ? (c.key === 'pkg' || sums[c.key] === undefined ? '' : fmtQty(sums[c.key])) : i === totalLabelAt ? (carton ? 'Total' : 'Total qty') : ''}
+                  </td>
+                ))}
+              </tr>
+            </tfoot>
+          )}
         </table>
         {framed && !flow && (
           <div className="tdoc-frame" aria-hidden="true">
@@ -141,34 +152,42 @@ export default function TemplateDoc({ template: tpl, ctx, design }) {
     <>
       {Array.from({ length: n }, (_, i) => (
         <Slip key={i + '|' + sig} avail={avail}>
-          {(z) => renderDoc(ctx.lines.slice(i * per, (i + 1) * per), i === n - 1, z, `Continued on the next receipt (${i + 1} of ${n})`)}
+          {(z) => renderDoc(ctx.lines.slice(i * per, (i + 1) * per), i === n - 1, z, `Continued on the next receipt (${i + 1} of ${n})`, { avail: avail - PRINT_SLACK_MM, per })}
         </Slip>
       ))}
     </>
   );
 }
 
-// One receipt of a fixed length: exactly as tall as the paper. A receipt that comes out taller (a long header, many items) is
-// scaled down until it fits, so the table always fits the paper whether it holds 1 item or all of them.
+// One receipt of a fixed length (80 x 297 mm): header at the top, the table of 30 (or 20) rows, the footer at the bottom.
+// The receipt is exactly as tall as the paper; if its header, rows and footer need more room than that, the whole receipt is
+// scaled down just enough to fit (the largest scale that does not overflow is searched for).
 function Slip({ avail, children }) {
   const ref = useRef(null);
   const [z, setZ] = useState(1);
-  // search for the largest scale that still fits (the receipt gets wider as it shrinks, so it is not a simple ratio)
-  const range = useRef({ lo: 0.45, hi: 1.001 });
+  const range = useRef({ lo: 0.4, hi: 1.001, done: false });
   useLayoutEffect(() => {
     const el = ref.current?.firstElementChild;
-    if (!el) return;
-    const h = el.getBoundingClientRect().height / PX_PER_MM;
     const r = range.current;
-    if (h > avail + 0.3) {
-      if (z <= r.lo + 0.001) return; // as small as it goes
-      r.hi = z;
-      setZ(Math.max(r.lo, (r.lo + r.hi) / 2));
-    } else if (h < avail - 3 && z < 1 && r.hi - z > 0.015) {
-      r.lo = z;
-      setZ(Math.min(1, (r.lo + r.hi) / 2));
-    }
+    if (!el || r.done) return;
+    const fits = el.scrollHeight - el.clientHeight <= 1;
+    if (fits) r.lo = z;
+    else r.hi = z;
+    if (r.hi - r.lo < 0.012 || (!fits && z <= 0.401)) {
+      r.done = true;
+      if (z !== r.lo) setZ(r.lo);
+    } else setZ((r.lo + r.hi) / 2);
   });
+  // a logo changes the height once it has loaded: search again then
+  useEffect(() => {
+    const imgs = [...(ref.current?.querySelectorAll('img') || [])].filter((i) => !i.complete);
+    const again = () => {
+      range.current = { lo: 0.4, hi: 1.001, done: false };
+      setZ(1);
+    };
+    imgs.forEach((i) => i.addEventListener('load', again));
+    return () => imgs.forEach((i) => i.removeEventListener('load', again));
+  }, []);
   return (
     <div ref={ref} className="tslip" style={{ height: avail + 'mm' }}>
       {children(z)}
@@ -345,6 +364,9 @@ export function PageSheet({ template, ctx, scale = 1, design, className = '' }) 
 
 // fit a page into a box `px` wide
 export const fitScale = (template, px) => Math.min(1.25, px / (pageSize(template.page).w * PX_PER_MM));
+
+// A fixed-size receipt is laid out a few mm shorter than its paper: printing sets the rows a little taller than the screen does
+const PRINT_SLACK_MM = 5;
 
 // longest single receipt slip (mm); anything longer goes on to the next slip
 const ROLL_MAX_MM = 300;

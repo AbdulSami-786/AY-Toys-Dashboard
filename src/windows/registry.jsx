@@ -29,6 +29,7 @@ import Templates from './templates/Templates';
 import Customized from './Customized';
 import TemplateEditor from './templates/TemplateEditor';
 import UsersWindow from './Users';
+import KeyMap from './KeyMap';
 import { reportTitle } from '../lib/reports';
 import { TXN_TYPES } from '../store/defaults';
 
@@ -73,6 +74,7 @@ export const WINDOW_COMPONENTS = {
   customized: Customized,
   templateeditor: TemplateEditor,
   users: UsersWindow,
+  keymap: KeyMap,
 };
 
 const TITLES = {
@@ -114,6 +116,7 @@ const TITLES = {
   customized: 'Customized Templates',
   templateeditor: 'Customize Template',
   users: 'Users & Permissions',
+  keymap: 'Customize Keyboard Shortcuts',
 };
 
 export function windowTitle(type, props = {}) {

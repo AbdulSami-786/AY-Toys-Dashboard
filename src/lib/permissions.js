@@ -102,7 +102,7 @@ export const PRESETS = [
 ];
 
 // pages anyone who can log in may use
-const ALWAYS = new Set(['home', 'shortcuts', 'productinfo', 'companies', 'changepassword']);
+const ALWAYS = new Set(['home', 'shortcuts', 'keymap', 'productinfo', 'companies', 'changepassword']);
 // only for a Super Admin
 const ADMIN_ONLY = new Set(['users', 'newcompany', 'rebuild']);
 

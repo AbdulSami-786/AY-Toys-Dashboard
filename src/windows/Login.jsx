@@ -1,8 +1,8 @@
 // Before the app: create the Super Admin (first run), log in, or unlock after a break.
 import { useState } from 'react';
-import { LogIn, Lock, Eye, EyeOff, ShieldCheck, RefreshCw, CloudOff, Fingerprint } from 'lucide-react';
+import { LogIn, Lock, Eye, EyeOff, ShieldCheck, RefreshCw, CloudOff, Fingerprint, ScanFace } from 'lucide-react';
 import { useUsers } from '../store/users';
-import { useFingerprintSupport } from '../lib/fingerprint';
+import { useFingerprintSupport, deviceUnlock } from '../lib/fingerprint';
 import { SHEET_READY } from '../config';
 import { MIN_PASSWORD } from '../lib/password';
 import BrandLogo from '../components/BrandLogo';
@@ -100,8 +100,10 @@ function Setup() {
   );
 }
 
-function FingerprintButton({ run, onError, label = 'Use fingerprint' }) {
+function FingerprintButton({ run, onError, label }) {
   const [busy, setBusy] = useState(false);
+  const dev = deviceUnlock();
+  const Icon = dev.kind === 'ios' ? ScanFace : Fingerprint;
   const go = async () => {
     setBusy(true);
     onError('');
@@ -111,7 +113,7 @@ function FingerprintButton({ run, onError, label = 'Use fingerprint' }) {
   };
   return (
     <button type="button" className="btn login-btn" onClick={go} disabled={busy}>
-      <Fingerprint size={18} /> {busy ? 'Waiting for your fingerprint…' : label}
+      <Icon size={18} /> {busy ? `Waiting for ${dev.short}…` : label}
     </button>
   );
 }
@@ -154,7 +156,7 @@ function Login() {
         <button className="btn primary login-btn" disabled={busy}>
           <LogIn size={16} /> {busy ? 'Checking…' : 'Log in'}
         </button>
-        {fpOk && anyFingerprint && <FingerprintButton run={loginWithFingerprint} onError={setErr} label="Log in with fingerprint" />}
+        {fpOk && anyFingerprint && <FingerprintButton run={loginWithFingerprint} onError={setErr} label={`Log in with ${deviceUnlock().short}`} />}
         <p className="muted small">Forgot your password? Ask the Super Admin to set a new one.</p>
       </form>
     </Screen>
@@ -228,7 +230,7 @@ function LockScreen() {
         <PasswordInput value={p} onChange={setP} autoFocus />
         {err && <div className="note warn mt">{err}</div>}
         <button className="btn primary login-btn">Unlock</button>
-        {fpOk && myFingerprint && <FingerprintButton run={unlockWithFingerprint} onError={setErr} label="Unlock with fingerprint" />}
+        {fpOk && myFingerprint && <FingerprintButton run={unlockWithFingerprint} onError={setErr} label={`Unlock with ${deviceUnlock().short}`} />}
         <button type="button" className="btn ghost" onClick={logout}>
           Log in as someone else
         </button>

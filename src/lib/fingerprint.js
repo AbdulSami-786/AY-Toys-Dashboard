@@ -1,5 +1,5 @@
-// Fingerprint (or Windows Hello / face / phone unlock) as a quicker way to log in and to unlock the screen.
-// It uses the computer's own WebAuthn: the fingerprint never leaves the sensor and CAS World Wide never sees it. What is
+// Face ID / fingerprint (Windows Hello, Android face or fingerprint unlock, iPhone Face ID / Touch ID) as a quicker way to log in
+// and to unlock the screen. It uses the device's own WebAuthn: the face or finger never leaves the device and CAS World Wide never sees it. What is
 // kept here is only a public key, made on this computer for one user. To accept a fingerprint the app asks the
 // device to sign a fresh random challenge and checks that signature itself (it does not just trust "ok").
 // A fingerprint belongs to one user on one computer, and stops working when that user's password changes.
@@ -19,8 +19,19 @@ const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
 const rpId = () => location.hostname;
 const usable = () => typeof window !== 'undefined' && !!window.PublicKeyCredential && window.isSecureContext && !!rpId() && !!crypto?.subtle;
 
+/** what this device calls its face / fingerprint unlock, and how to set it up (for the wording on screen) */
+export function deviceUnlock() {
+  const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+  const touch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1;
+  if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && touch)) return { kind: 'ios', name: 'Face ID', short: 'Face ID', setup: 'Set up Face ID (or Touch ID) in Settings › Face ID & Passcode. A passcode must be on.' };
+  if (/Android/i.test(ua)) return { kind: 'android', name: 'Face unlock / fingerprint', short: 'face or fingerprint unlock', setup: 'Turn on a screen lock with face or fingerprint in Settings › Security.' };
+  if (/Windows/i.test(ua)) return { kind: 'windows', name: 'Windows Hello (face, fingerprint or PIN)', short: 'Windows Hello', setup: 'Set it up in Windows Settings › Accounts › Sign-in options (face recognition needs an infrared camera).' };
+  if (/Macintosh/.test(ua)) return { kind: 'mac', name: 'Touch ID', short: 'Touch ID', setup: 'Set up Touch ID in System Settings › Touch ID & Password.' };
+  return { kind: 'other', name: 'Face or fingerprint unlock', short: 'face or fingerprint unlock', setup: 'Set up the face or fingerprint unlock of this device first.' };
+}
+
 let supportCache;
-/** does this computer have a fingerprint reader / Windows Hello / device unlock? */
+/** does this device have Face ID / a fingerprint reader / Windows Hello / device unlock? */
 export function fingerprintSupported() {
   if (!usable()) return Promise.resolve(false);
   supportCache ||= PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(() => false);
@@ -50,7 +61,7 @@ const store = (v) => {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify(v));
   } catch {
-    throw new Error('This computer would not save the fingerprint (browser storage is blocked).');
+    throw new Error('This device would not save it (browser storage is blocked).');
   }
 };
 /** the user's fingerprint, only while it still matches the password it was set up under */
@@ -65,17 +76,18 @@ export function removeFingerprint(userId) {
 }
 
 const message = (e) => {
-  if (e?.name === 'NotAllowedError') return 'Fingerprint cancelled or not recognised. Try again, or use your password.';
-  if (e?.name === 'SecurityError' || e?.name === 'NotSupportedError') return 'This window cannot use the fingerprint. Use your password.';
-  return e?.message || 'The fingerprint did not work. Use your password.';
+  const d = deviceUnlock().short;
+  if (e?.name === 'NotAllowedError') return `${d} was cancelled or not recognised. Try again, or use your password.`;
+  if (e?.name === 'SecurityError' || e?.name === 'NotSupportedError') return `This window cannot use ${d}. Use your password.`;
+  return e?.message || `${d} did not work. Use your password.`;
 };
 const fail = (e) => {
   throw new Error(message(e));
 };
 
-/** set up the fingerprint of a user on this computer (the device asks for the finger or Windows Hello PIN) */
+/** set up Face ID / fingerprint for a user on this device (the device asks for the face, finger or PIN) */
 export async function enrollFingerprint(user) {
-  if (!(await fingerprintSupported())) throw new Error('This computer has no fingerprint reader or Windows Hello set up.');
+  if (!(await fingerprintSupported())) throw new Error(`This device has no ${deviceUnlock().short} set up. ${deviceUnlock().setup}`);
   const cred = await navigator.credentials
     .create({
       publicKey: {
@@ -94,7 +106,7 @@ export async function enrollFingerprint(user) {
     .catch(fail);
   const pub = cred?.response?.getPublicKey?.();
   const alg = cred?.response?.getPublicKeyAlgorithm?.();
-  if (!pub || (alg !== -7 && alg !== -257)) throw new Error('This computer’s fingerprint cannot be used by CAS World Wide.');
+  if (!pub || (alg !== -7 && alg !== -257)) throw new Error(`This device’s ${deviceUnlock().short} cannot be used by CAS World Wide.`);
   const v = all();
   v[user.id] = { id: b64(cred.rawId), pub: b64(pub), alg, bind: user.hash, at: new Date().toISOString() };
   store(v);
@@ -134,7 +146,7 @@ async function signatureOk(rec, authData, clientData, sig) {
  * → the record that was proven (it has userId), or throws an Error with the reason.
  */
 export async function checkFingerprint(records) {
-  if (!records.length) throw new Error('No fingerprint is set up for this. Use your password.');
+  if (!records.length) throw new Error(`${deviceUnlock().short} is not turned on for this. Use your password.`);
   const challenge = crypto.getRandomValues(new Uint8Array(32));
   const cred = await navigator.credentials
     .get({
@@ -148,7 +160,7 @@ export async function checkFingerprint(records) {
     })
     .catch(fail);
   const rec = records.find((r) => r.id === b64(cred?.rawId || new ArrayBuffer(0)));
-  const bad = new Error('The fingerprint could not be checked. Use your password.');
+  const bad = new Error(`${deviceUnlock().short} could not be checked. Use your password.`);
   if (!rec) throw bad;
   try {
     const authData = new Uint8Array(cred.response.authenticatorData);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Check } from 'lucide-react';
 import { MENUS } from '../lib/commands';
+import { menuKeyText } from '../lib/keymap';
 import { useWindows } from '../store/windows';
 
 function Label({ text, letter }) {
@@ -60,7 +61,7 @@ function Drop({ items, run, close, hi, setHi, depth = 0 }) {
           >
             {it.checked && <Check size={12} className="menu-check" />}
             <span>{it.label}</span>
-            {it.key && <span className="menu-key">{it.key}</span>}
+            {menuKeyText(it) && <span className="menu-key">{menuKeyText(it)}</span>}
             {it.items && <ChevronRight size={13} style={{ marginLeft: 'auto' }} />}
             {it.items && (depth === 0 ? hi === i && sub === i : sub === i) && (
               <Drop items={it.items} run={run} close={close} hi={-1} setHi={() => {}} depth={depth + 1} />

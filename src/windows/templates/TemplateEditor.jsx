@@ -497,9 +497,9 @@ function BasicPanel({ t, form, set, setStyle, setCo, setPage, makeDefault, setMa
         {isRoll(t.page) && (
           <Field label="Receipt length">
             <select value={rollFixedLength(t.page)} onChange={(e) => setPage('rollLength', Number(e.target.value))}>
+              <option value={297}>80 × 297 mm — 30 items on one receipt (standard)</option>
+              <option value={210}>80 × 210 mm — 20 items on one receipt</option>
               <option value={0}>Automatic — as long as the bill</option>
-              <option value={210}>210 mm — 20 items on one receipt</option>
-              <option value={297}>297 mm — 30 items on one receipt</option>
             </select>
           </Field>
         )}

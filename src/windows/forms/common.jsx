@@ -313,9 +313,30 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
       if (next) saveRecord('txns', next);
     }
   };
+  // Leaving a changed transaction (Esc, New, next / previous): Save it, Discard the changes, or Cancel and stay. true = go ahead.
   const guard = async () => {
     if (!dirty) return true;
-    return dlg.confirm('You have unsaved changes on this transaction.\n\nDiscard them?', { ok: 'Discard changes', danger: true });
+    const answer = await dlg.choose('This transaction has unsaved changes.\n\nDo you want to save them?', {
+      title: 'Unsaved changes',
+      buttons: [
+        { label: 'Save', value: 'save', primary: true },
+        { label: 'Discard', value: 'discard', danger: true },
+        { label: 'Cancel', value: 'cancel' },
+      ],
+    });
+    if (answer === 'save') return !!(await save('stay'));
+    return answer === 'discard';
+  };
+
+  // Print: a transaction that is new or changed is saved first, then printed (nothing is printed if it cannot be saved)
+  const printDoc = async () => {
+    if (!printNode) return;
+    if (isNew || dirty) {
+      const saved = await save('stay');
+      if (saved) printNode(saved);
+      return;
+    }
+    printNode(previewSource());
   };
 
   const save = async (mode) => {
@@ -418,7 +439,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     'ctrl+m': () => setModal({ kind: 'memorize' }),
     'ctrl+y': () => !isNew && setModal({ kind: 'journal' }),
     'ctrl+h': () => !isNew && nav.report('history', { txnId: f.id }),
-    'ctrl+p': () => printNode && printNode(previewSource()),
+    'ctrl+p': printDoc,
     esc: async () => (await guard()) && close(winId),
   };
   useWindowKeys(keys);
@@ -456,7 +477,7 @@ export function useTxnController({ winId, type, types = [type], txnId, f, setF, 
     onVoid: toggleVoid,
     onCopy: copy,
     onMemorize: () => setModal({ kind: 'memorize' }),
-    onPrint: printNode ? () => printNode(previewSource()) : undefined,
+    onPrint: printNode ? printDoc : undefined,
     onHistory: () => nav.report('history', { txnId: f.id }),
     onJournal: () => setModal({ kind: 'journal' }),
     onFind: () => nav.open('find', { type, n: Date.now() }),

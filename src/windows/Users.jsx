@@ -1,8 +1,8 @@
 // Users & Permissions (Super Admin only): add users, set their password, and choose the shops and pages each may open.
 import { useMemo, useState } from 'react';
-import { UserCog, Plus, Pencil, Trash2, ShieldCheck, Cloud, CloudOff, Lock, Search, Fingerprint } from 'lucide-react';
+import { UserCog, Plus, Pencil, Trash2, ShieldCheck, Cloud, CloudOff, Lock, Search, Fingerprint, ScanFace } from 'lucide-react';
 import { useUsers, usePerm } from '../store/users';
-import { useFingerprintSupport } from '../lib/fingerprint';
+import { useFingerprintSupport, deviceUnlock } from '../lib/fingerprint';
 import { useStore } from '../store/store';
 import { Modal, useDialog } from '../components/ui';
 import { PAGE_GROUPS, PRESETS, ALL_PAGES, isAdmin } from '../lib/permissions';
@@ -375,10 +375,12 @@ export default function UsersWindow() {
   );
 }
 
-/** Any user: turn the fingerprint on or off for this computer. */
+/** Any user: turn Face ID / fingerprint on or off for this device. */
 export function FingerprintSetup({ onClose }) {
   const { me, unlock, myFingerprint, enableFingerprint, disableFingerprint } = useUsers();
   const supported = useFingerprintSupport();
+  const dev = deviceUnlock();
+  const Icon = dev.kind === 'ios' ? ScanFace : Fingerprint;
   const dlg = useDialog();
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
@@ -387,11 +389,11 @@ export function FingerprintSetup({ onClose }) {
     setErr('');
     setBusy(true);
     try {
-      // the password proves it is really this user before a finger is added to their account
+      // the password proves it is really this user before a face or finger is added to their account
       const bad = await unlock(pw);
       if (bad) return setErr('Your password is wrong.');
       await enableFingerprint();
-      dlg.toast('Fingerprint is on for this computer');
+      dlg.toast(`${dev.short} is on for this device`);
       onClose();
     } catch (e) {
       setErr(e.message);
@@ -401,12 +403,12 @@ export function FingerprintSetup({ onClose }) {
   };
   const turnOff = () => {
     disableFingerprint();
-    dlg.toast('Fingerprint is off');
+    dlg.toast(`${dev.short} is off`);
     onClose();
   };
   return (
     <Modal
-      title="Fingerprint"
+      title="Face ID / Fingerprint"
       onClose={onClose}
       width={440}
       footer={
@@ -416,21 +418,21 @@ export function FingerprintSetup({ onClose }) {
           </button>
           {myFingerprint ? (
             <button className="btn danger" onClick={turnOff}>
-              Turn fingerprint off
+              Turn {dev.short} off
             </button>
           ) : (
             <button className="btn primary" onClick={turnOn} disabled={busy || !supported || !pw}>
-              <Fingerprint size={14} /> {busy ? 'Waiting for your fingerprint…' : 'Turn fingerprint on'}
+              <Icon size={14} /> {busy ? `Waiting for ${dev.short}…` : `Turn ${dev.short} on`}
             </button>
           )}
         </>
       }
     >
       <p className="muted small" style={{ marginTop: 0 }}>
-        {me?.name}, use your fingerprint (or Windows Hello) to log in and to unlock the screen on <b>this computer</b>. Your fingerprint stays in the computer; AY Toys never sees it. Your password still works.
+        {me?.name}, use <b>{dev.name}</b> to log in and to unlock the screen on <b>this device</b> (iPhone: Face ID, Android: face or fingerprint, Windows: Windows Hello). Your face or finger stays in the device; CAS World Wide never sees it. Your password still works.
       </p>
-      {!supported && <div className="note warn">This computer has no fingerprint reader or Windows Hello set up. Set it up in Windows Settings › Accounts › Sign-in options, then come back.</div>}
-      {supported && myFingerprint && <div className="note">Fingerprint is <b>on</b> for you on this computer. It stops working if your password changes — turn it on again then.</div>}
+      {!supported && <div className="note warn">This device has no {dev.short} set up. {dev.setup} Then come back. (On a phone, open the program from its secure https:// address.)</div>}
+      {supported && myFingerprint && <div className="note">{dev.short} is <b>on</b> for you on this device. It stops working if your password changes — turn it on again then.</div>}
       {supported && !myFingerprint && (
         <label className="lf">
           Your password (to confirm it is you)

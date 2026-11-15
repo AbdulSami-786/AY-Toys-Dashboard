@@ -90,6 +90,11 @@ export function DialogProvider({ children }) {
       new Promise((resolve) => setDlg({ message, title, ok, cancel, danger, resolve })),
     [],
   );
+  // A question with its own buttons, e.g. Save / Discard / Cancel: resolves with the clicked button's value ('cancel' for Esc / ✕)
+  const choose = useCallback(
+    (message, { title = 'CAS World Wide', buttons = [] } = {}) => new Promise((resolve) => setDlg({ message, title, buttons, choice: true, danger: false, resolve })),
+    [],
+  );
   const alert = useCallback(
     (message, { title = 'CAS World Wide' } = {}) => new Promise((resolve) => setDlg({ message, title, ok: 'OK', resolve, alertOnly: true })),
     [],
@@ -106,15 +111,24 @@ export function DialogProvider({ children }) {
   };
 
   return (
-    <DialogCtx.Provider value={{ confirm, alert, toast }}>
+    <DialogCtx.Provider value={{ confirm, choose, alert, toast }}>
       {children}
       {dlg && (
         <Modal
           title={dlg.title}
-          onClose={() => done(false)}
-          width={420}
+          onClose={() => done(dlg.choice ? 'cancel' : false)}
+          width={dlg.choice ? 460 : 420}
           icon={dlg.danger ? <AlertTriangle size={16} className="warn-ic" /> : <Info size={16} />}
           footer={
+            dlg.choice ? (
+              <>
+                {dlg.buttons.map((b) => (
+                  <button key={b.value} className={'btn' + (b.primary ? ' primary' : '') + (b.danger ? ' danger' : '')} autoFocus={!!b.primary} onClick={() => done(b.value)}>
+                    {b.label}
+                  </button>
+                ))}
+              </>
+            ) : (
             <>
               {!dlg.alertOnly && (
                 <button className="btn" onClick={() => done(false)}>
@@ -125,6 +139,7 @@ export function DialogProvider({ children }) {
                 {dlg.ok}
               </button>
             </>
+            )
           }
         >
           <div className="dlg-msg">{dlg.message}</div>
